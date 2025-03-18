@@ -1,0 +1,64 @@
+```{r}
+data <- matrix(rnorm(20*500), 20, 500)
+Maxnc = min(dim(data))
+sstotal = sum(data^2)
+output1 <- prcomp(data, center = FALSE)
+```
+
+```{r}
+res_ica = icafast_adjust(X = data, nc = Maxnc, center = FALSE)
+```
+
+```{r}
+output <- NULL
+output_ica = NULL
+for (compnr in 1:Maxnc) {
+  
+  sse = sum((data - output1$x[,1:compnr] %*% t(output1$rotation[,1:compnr]))^2)
+  sse_ica = sum((data - res_ica$S[,1:compnr] %*% t(res_ica$M[,1:compnr]))^2)
+  
+  output = c(output, (sstotal- sse) / sstotal)
+  output_ica = c(output_ica, (sstotal- sse_ica) / sstotal)
+}
+output
+output_ica
+threshold = 0.8
+min(which(output > threshold))
+
+output - output_ica
+```
+
+```{r}
+List <- NULL
+
+for(i in 1:4){
+    List[[i]] <- data <- matrix(rnorm(20*500), 20, 500)
+  }
+```
+
+```{r}
+cal_nc <- function(X, threshold = 0.7) {
+  nc_vector <- NULL
+  
+  for (data in X) {
+    # transfer the dim to (subjects, features)
+    data = t(data)
+    Maxnc <- min(dim(data))
+    vaf <- NULL
+    sstotal = sum(data^2)
+    components <- prcomp(data, center = FALSE)
+    for (compnr in 1:Maxnc) {
+      sse = sum((data - components$x[,1:compnr] %*% t(components$rotation[,1:compnr]))^2)
+      vaf = c(vaf, (sstotal- sse) / sstotal)
+    }
+    nc_vector <- c(nc_vector, min(which(vaf > threshold)))
+  }
+  
+  
+  return(nc_vector)
+}
+
+
+res_nc <- cal_nc(List)
+res_nc
+```

@@ -23,21 +23,50 @@ sortX <- function(X, p){
 # algorithm step 2
 
 # use VAF > threshold to determine the component number per cluster
-cal_nc <- function(X, threshold = 0.8) {
+cal_nc <- function(X, threshold = 0.8, useChull = TRUE) {
   nc_vector <- NULL
   
   for (data in X) {
     # transfer the dim to (subjects, features)
     data = t(data)
     Maxnc <- min(dim(data))
+    # Skip if trivial
+    if (Maxnc == 1 || nrow(data) <= 1 || ncol(data) == 0) {
+      warning("Skipping due to insufficient data dimensions.")
+      nc_vector <- c(nc_vector, 1)
+      next
+    }
+    
     vaf <- NULL
     sstotal = sum(data^2)
+    # use PCA here
+    # use CHull, complexity = components number, fit = sse or vaf.
     components <- prcomp(data, center = FALSE)
     for (compnr in 1:Maxnc) {
       sse = sum((data - components$x[,1:compnr] %*% t(components$rotation[,1:compnr]))^2)
       vaf = c(vaf, (sstotal- sse) / sstotal)
     }
-    nc_vector <- c(nc_vector, min(which(vaf >= threshold)))
+    if (useChull) {
+      comp.fit <- cbind(c(1:Maxnc), vaf)
+      comp.fit <- as.data.frame(comp.fit) 
+      colnames(comp.fit) <- c("complexity", "fit")
+      
+      chull_result <- tryCatch({
+        CHull(comp.fit, bound = "upper")
+      }, error = function(e) {
+        warning("CHull failed: ", e$message)
+        NULL
+      })
+      
+      # Check if result is a valid CHull object
+      if (inherits(chull_result, "CHull") && !is.null(chull_result$Solution$complexity)) {
+        nc_vector <- c(nc_vector, chull_result$Solution$complexity)
+      } else {
+        nc_vector <- c(nc_vector, 1)
+      }
+    } else {
+      nc_vector <- c(nc_vector, min(which(vaf >= threshold)))
+    }
   }
   
   return(nc_vector)
@@ -50,12 +79,10 @@ ICAonList <- function(List, nc_vector){
   #if else statement does not really matter. ica_adjust and ica::icafast give same results
   # included here only in testphase of coding
   #if(nc == 1){
-  
-  # Result <- lapply(List, FUN = icafast_adjust, nc = nc)
+  Result = NULL
   Result <- mapply(icafast_adjust, List, nc_vector, SIMPLIFY = FALSE)
-  #}else{
+  
   #  Result <- lapply(List, FUN = ica::icafast, nc = nc) 
-  #}
   
   S <- lapply(seq_along(Result), function(anom) Result[[anom]]$S)
   M <- lapply(seq_along(Result), function(anom) Result[[anom]]$M)
@@ -257,23 +284,49 @@ Ahats <- function(X, icapara){
 
 # Xhat <- Sr %*% Air
 
-XhatsAndLir <- function(X, Sr, Ahats){
-  nClus <- length(Sr)
+XhatsAndLir <- function(X, nClus, Sr, Ahats, Qvec, complex, Vm){
+  # todo: N should be different in clusters
   N <- ncol(X)
-  
+  V <- Vm
   ss <- matrix(data = NA,nrow = N, ncol = nClus)
+  aic <- matrix(data = NA,nrow = N, ncol = nClus)
+  penalty <- NA
   for(outer in 1:N){
     
     for(inner in 1:nClus){
       xhat <- Sr[[inner]] %*% Ahats[[inner]][outer,]
       ss[outer,inner] <- sum( (X[,outer] - xhat)^2 )
+      I <- nrow(Ahats[[inner]])
+      # define the penalty 
+      if(complex == 1) {
+        penalty <- Qvec[inner] 
+      # } else if(complexity == 2) {
+      #   penalty <- Qvec[inner]
+      } else if(complex == 3) {
+        penalty <- Qvec[inner] * V
+      } else if(complex == 4) {
+        penalty <- Qvec[inner] * V + I
+      # } else if(complexity == 5) {
+      #   penalty <- Qvec[inner] * V + N
+      } else if(complex == 6) {
+        penalty <- Qvec[inner] * V + Qvec[inner] * I
+      } else if(complex == 7) {
+        penalty <- Qvec[inner] * V  + Qvec[inner] * I + I
+      } else {
+        penalty <- 0
+      }
+      aic[outer,inner] <- log(ss[outer,inner])*V + 2 * penalty
     }
   }
   
-  newp <- apply(ss, MARGIN = 1, which.min)
+  
   lossvec <- apply(ss, MARGIN = 1, min)
   loss <- sum(lossvec)
   vaf <- ( sum(X^2)-loss) / sum(X^2)
+  aicvec <- apply(aic, MARGIN = 1, min)
+  aicSum <- sum(aicvec)
+  # newp <- apply(ss, MARGIN = 1, which.min)
+  newp <- apply(aic, MARGIN = 1, which.min)
   
   out <- list()
   out$newp <- newp
@@ -281,12 +334,10 @@ XhatsAndLir <- function(X, Sr, Ahats){
   out$loss <- loss
   out$vaf <- vaf
   out$ss <- ss
+  out$aic <- aic
+  out$aicSum <- aicSum
+  out$aicvec <- aicvec
   return(out)
-}
-
-# get AIC
-AIC <- function(N, J, ss, Q) {
-  return(N*J*log(ss) + 2*N*Q)
 }
 
 

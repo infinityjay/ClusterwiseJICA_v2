@@ -5,16 +5,23 @@
 
 # X: simulated/real data
 # k: cluster size
-# nc: component number 
+# nc: component number
 # starts: iteration times
-ClusterwiseJICA <- function(X, k = 2, nc = 2, starts = 100, scale = T, rational = NULL, verbose = F){
-  #### change this
+
+# remove nc vector from the params, and calculate it before step 2
+ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ, VAF = 1, scale = F, 
+                                  complex, useChull = T, Vm = 500, rational = NULL, verbose = F){
+  if (useInputQ) {
+    if (length(nc) != k) {
+      stop("Error: nc length not equal to k")
+    }
+  }
   
   if(scale == T){
-    f1 <- sqrt(5000/sum(X[1:2500,]^2))
-    f2 <- sqrt(5000/sum(X[2501:5000,]^2))
-    X1 <- f1*X[1:2500,]
-    X2 <- f2*X[2501:5000,]
+    f1 <- sqrt((2*Vm)/sum(X[1:Vm,]^2))
+    f2 <- sqrt((2*Vm)/sum(X[Vm+1:2*Vm,]^2))
+    X1 <- f1*X[1:Vm,]
+    X2 <- f2*X[Vm+1:Vm*2,]
     X <- rbind(X1,X2)
   }
   
@@ -44,12 +51,11 @@ ClusterwiseJICA <- function(X, k = 2, nc = 2, starts = 100, scale = T, rational 
       # algo step 1
       if(iter == 1){
         if(!is.null(rational)){
+          # rational will be null in test, ignore the nc->vector problem for now.
           p <- rational
           
           t <- 0
           while( any( table(p)  < nc ) & t < 100 ){
-            clusters <- 1:k
-            
             id <- which(table(p) < nc)  
             id_to_take <- which(table(p) > nc)
             id_to_take <- which(p == id_to_take)
@@ -71,22 +77,26 @@ ClusterwiseJICA <- function(X, k = 2, nc = 2, starts = 100, scale = T, rational 
       List <- sortX(X, p)
       
       # algo step 2
+      # calculate the component number per cluster
+      if (!useInputQ) {
+        nc <- cal_nc(X = List, VAF, useChull)
+      }
       
       #### add stop warning over here ##### about nc <= k_n 
       icaparam <- ICAonList(List, nc = nc)
       
       # algo step 3
       Ahh <- Ahats(X = X, icapara = icaparam)
-      Lir <- XhatsAndLir(X = X, Sr = icaparam$Sr, Ahats = Ahh)
+      Lir <- XhatsAndLir(X = X, nClus = k, Sr = icaparam$Sr, Ahats = Ahh, Qvec = nc, complex = complex, Vm)
       
       # avoid empty clusters
-      if( length(unique(Lir$p)) < k ){
+      if( length(unique(Lir$newp)) < k ){
         Lir$newp <- SearchEmptyClusters(nClus = k, newcluster = Lir$newp, 
-                                        SSminVec = Lir$lossvec)
+                            SSminVec = Lir$aicvec)
       }
       
-      # avoid clus size lower than nc
-      Lir$newp <- Avoid_nc_N(Lir$newp, Lir$lossvec, nc = nc)
+      # # avoid clus size lower than nc
+      # Lir$newp <- Avoid_nc_N(Lir$newp, Lir$lossvec, nc = nc)
       
       lossiter <- c(lossiter, Lir$loss)
       
@@ -103,8 +113,5 @@ ClusterwiseJICA <- function(X, k = 2, nc = 2, starts = 100, scale = T, rational 
     out$Lir <- Lir
     ResultsStarts[[start]] <- out
   }
-  
-  
-  
   return(ResultsStarts)
 }

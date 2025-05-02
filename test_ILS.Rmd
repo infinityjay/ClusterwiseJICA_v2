@@ -1,0 +1,176 @@
+---
+title: "test2"
+author: "Jie Chen"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library("mclust")
+library("multichull")
+source("./functions/data_simulation_functions.R")
+source("./functions/ClusterwiseJICA_varyQ.R")
+source("./functions/ClusterwiseJICA.R")
+source("./functions/CJICA_asist_functions.R")
+source("./functions/ILS_CJICA.R")
+```
+
+## 6. test penalty - with chull
+
+### generate data
+
+```{r}
+source("./functions/data_simulation_functions.R")
+set.seed(123)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1 <- Simulate_CJICA(Nk = 50, Vm = 500, K = 4, Qvect = c(2,2,9,9), E = .4, M = 2, type = 1, cor = .05, VAF = 1)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1.RData")
+```
+
+```{r}
+load("./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1.RData")
+```
+
+complexity = 1
+
+```{r}
+set.seed(123)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, starts = 20, scale = F, VAF = 1, complex = 1, useChull = T, Vm = 500)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result.RData")
+
+```
+
+```{r}
+aic_sums <- sapply(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result, function(res) res$Lir$aicSum)
+min_index <- which.min(aic_sums)
+optimal <- data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result[[min_index]]
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result_ARI <- adjustedRandIndex(
+  data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, 
+  optimal$p
+)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_chull_result_ARI
+```
+
+complexity = 3
+
+```{r}
+
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, starts = 20, scale = F, VAF = 1, complex = 3, useChull = T, Vm = 500)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result.RData")
+
+```
+
+```{r}
+aic_sums <- sapply(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result, function(res) res$Lir$aicSum)
+min_index <- which.min(aic_sums)
+optimal <- data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result[[min_index]]
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result_ARI <- adjustedRandIndex(
+  data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, 
+  optimal$p
+)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_chull_result_ARI
+```
+
+complexity = 4
+
+```{r}
+
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, starts = 20, scale = F, VAF = 1, complex = 4, useChull = T, Vm = 500)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result.RData")
+
+```
+
+```{r}
+aic_sums <- sapply(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result, function(res) res$Lir$aicSum)
+min_index <- which.min(aic_sums)
+optimal <- data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result[[min_index]]
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result_ARI <- adjustedRandIndex(
+  data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, 
+  optimal$p
+)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_chull_result_ARI
+```
+
+complexity = 6
+
+```{r}
+
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, starts = 20, scale = F, VAF = 1, complex = 6, useChull = T, Vm = 500)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result.RData")
+
+```
+
+```{r}
+aic_sums <- sapply(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result, function(res) res$Lir$aicSum)
+min_index <- which.min(aic_sums)
+optimal <- data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result[[min_index]]
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result_ARI <- adjustedRandIndex(
+  data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, 
+  optimal$p
+)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp6_chull_result_ARI
+```
+
+complexity = 7
+
+```{r}
+
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, starts = 20, scale = F, VAF = 1, complex = 7, useChull = T, Vm = 500)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result.RData")
+
+```
+
+```{r}
+aic_sums <- sapply(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result, function(res) res$Lir$aicSum)
+min_index <- which.min(aic_sums)
+optimal <- data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result[[min_index]]
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result_ARI <- adjustedRandIndex(
+  data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, 
+  optimal$p
+)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp7_chull_result_ARI
+```
+
+### use ILS
+
+complex = 1
+
+```{r}
+set.seed(123)
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_chull_result <- ILS_CJICA(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, scale = F, VAF = 1, complex = 1, useChull = T, Vm = 500, iter = 100, stepsize = 2,titlevec = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, rational = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, verbose = F)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_chull_result.RData")
+```
+
+```{r}
+plot(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_chull_result$ARItrack)
+```
+
+```{r}
+
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_chull_result$pvault[, which.min(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_chull_result$lossvault)] %>% adjustedRandIndex(data_Nk50_Vm500_K4_Q2299_E04_VAF1$P)
+```
+
+use iter = 1000
+
+```{r}
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_iter1000_chull_result <- ILS_CJICA(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, scale = F, VAF = 1, complex = 1, useChull = T, Vm = 500, iter = 1000, stepsize = 2,titlevec = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, rational = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P)
+```
+
+```{r}
+
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_iter1000_chull_result$pvault[, which.min(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp1_ILS_iter1000_chull_result$lossvault)] %>% adjustedRandIndex(data_Nk50_Vm500_K4_Q2299_E04_VAF1$P)
+
+```
+
+complex = 3
+
+```{r}
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_ILS_iter1000_chull_result <- ILS_CJICA(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, scale = F, VAF = 1, complex = 3, useChull = T, Vm = 500, iter = 1000, stepsize = 2,titlevec = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, rational = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_ILS_iter1000_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp3_ILS_iter1000_chull_result.RData")
+```
+
+complex = 4
+
+```{r}
+data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_ILS_iter1000_chull_result <- ILS_CJICA(X = data_Nk50_Vm500_K4_Q2299_E04_VAF1$Xe, k = 4, useInputQ = F, scale = F, VAF = 1, complex = 4, useChull = T, Vm = 500, iter = 1000, stepsize = 2,titlevec = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P, rational = data_Nk50_Vm500_K4_Q2299_E04_VAF1$P)
+save(data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_ILS_iter1000_chull_result, file = "./data/data_Nk50_Vm500_K4_Q2299_E04_VAF1_comp4_ILS_iter1000_chull_result.RData")
+```

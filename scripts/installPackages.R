@@ -1,1 +1,1 @@
-install.packages("multichull")
+install.packages("multichull", repos = "http://cran.case.edu")

@@ -1,1 +1,1 @@
-install.packages("multichull", repos = "http://cran.case.edu")
+install.packages("multichull", repos="https://ftp.fau.de/cran")

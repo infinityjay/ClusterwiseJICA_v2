@@ -32,8 +32,8 @@ cal_nc <- function(X, threshold = 0.8, useChull = TRUE) {
     Maxnc <- min(dim(data))
     # Skip if trivial
     if (Maxnc == 1 || nrow(data) <= 1 || ncol(data) == 0) {
-      warning("Skipping due to insufficient data dimensions.")
       nc_vector <- c(nc_vector, 1)
+      warning("Skipping due to insufficient data dimensions.")
       next
     }
     

@@ -34,6 +34,14 @@ ILS_CJICA <- function(X, k, nc=c(2,2), useInputQ, VAF = 1, scale = TRUE, complex
     
     repeat{
       loss1 <- Lir$aicSum
+      # do some empty cluster check.
+      if( length(unique(newp)) < k ){
+        newp <- SearchEmptyClusters(nClus = k, newcluster = newp,
+                                        SSminVec = Lir$lossvec)
+      }
+      # check subjects number larger/equal than 3, component number smaller than subject number.
+      
+      
       List <- sortX(X, newp)
       ## test fixed Q vector
       
@@ -45,12 +53,6 @@ ILS_CJICA <- function(X, k, nc=c(2,2), useInputQ, VAF = 1, scale = TRUE, complex
       Lir <- XhatsAndLir(X = X, nClus = k, Sr = icaparam$Sr, Ahats = Ahh, Qvec = nc, complex = complex, Vm = Vm)
       loss2 <- Lir$aicSum
       newp <- Lir$newp
-      # do some empty cluster check.
-      ###
-      if( length(unique(Lir$p)) < k ){
-        Lir$newp <- SearchEmptyClusters(nClus = k, newcluster = Lir$newp,
-                                        SSminVec = Lir$lossvec)
-      }
       
       loss1 - loss2
       losstrack <- c(losstrack,loss2)

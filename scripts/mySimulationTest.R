@@ -37,7 +37,7 @@ sp <- args[1]
 rows <- splits[[sp]]
 
 
-#### run c-jica function
+#### run simulation and c-jica function
 
 Vm <- 2500
 complex <- c(1,3,4,6,7)

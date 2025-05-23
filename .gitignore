@@ -48,4 +48,9 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
+# R project file
 *.Rproj
+# script log file
+*.out
+*.err
+job_logs/

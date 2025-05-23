@@ -56,6 +56,28 @@ for(sim in 1:nrow(grid)){
     cor = grid[sim, ]$cor,
     VAF = grid[sim, ]$VAF
   )
+
+  for(comp in complex) {
+    # run cjica and calculate executing time
+    ptm <- proc.time()
+    cjica <- ClusterwiseJICA_varyQ(
+      X = simdata$Xe,
+      k = length(grid$Qvect[[sim]]), 
+      useInputQ = F, 
+      starts = 100, 
+      scale = F, 
+      VAF = grid[sim, ]$VAF, 
+      complex = comp, 
+      useChull = T, 
+      Vm = Vm
+    )
+    time <- proc.time() - ptm
+    output <- list()
+    output$time <- time
+  }
+  ext <- './result/Sim1/'  
+  ext <- paste(ext,'CJICA_sim1_',rows[sim], '.Rdata',sep = '')
+  save(output,file = ext)
 }
 
 

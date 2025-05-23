@@ -43,6 +43,13 @@ Vm <- 2500
 complex <- c(1,3,4,6,7)
 grid <- grid[rows,]
 for(sim in 1:nrow(grid)){
+  cat(sprintf("\n--- Running simulation %d of %d (row index %d) ---\n", sim, nrow(grid), rows[sim]))
+  cat(sprintf("Params: Nk=%d, Qvect=%s, E=%.2f, cor=%.2f, VAF=%.2f\n", 
+              grid[sim, ]$Nk, 
+              paste(grid$Qvect[[sim]], collapse = ","), 
+              grid[sim, ]$E, 
+              grid[sim, ]$cor, 
+              grid[sim, ]$VAF))
   seed <- 123
   set.seed(seed)
   simdata <- Simulate_CJICA(
@@ -59,6 +66,7 @@ for(sim in 1:nrow(grid)){
 
   for(comp in complex) {
     # run cjica and calculate executing time
+    cat(sprintf("  > Running ClusterwiseJICA with complex=%d...\n", comp))
     ptm <- proc.time()
     cjica <- ClusterwiseJICA_varyQ(
       X = simdata$Xe,
@@ -72,14 +80,16 @@ for(sim in 1:nrow(grid)){
       Vm = Vm
     )
     time <- proc.time() - ptm
+    cat(sprintf("    Completed in %.2f seconds\n", time[3]))
     output <- list()
     output$time <- time
   }
   ext <- './result/Sim1/'  
   ext <- paste(ext,'CJICA_sim1_',rows[sim], '.Rdata',sep = '')
   save(output,file = ext)
+  cat(sprintf("    Result saved to %s\n", ext))
 }
-
+cat("=== CJICA Simulation Script Completed ===\n")
 
 #### analyze
 

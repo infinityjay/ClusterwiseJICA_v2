@@ -1,13 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=test_R_parallel
+#SBATCH -N 1
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
-#SBATCH --mail-user=""
-#SBATCH --mail-type=ALL
-#SBATCH --partition=testing
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10
-#SBATCH --mem-per-cpu=2G
+#SBATCH --partition="cpu-short"
+#SBATCH --time=3:59:00
+#SBATCH --mem=1G
 
 # Print job information
 echo "Job started at: $(date)"

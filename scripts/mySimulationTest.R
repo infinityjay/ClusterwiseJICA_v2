@@ -67,7 +67,7 @@ if (!dir.exists(output_dir)) {
 }
 
 for(sim in 1:nrow(grid)){
-  cat(sprintf("\n--- Running simulation %d of %d (row index %d) at %s ---\n", sim, nrow(grid), rows[sim]), Sys.time())
+  cat(sprintf("\n--- Running simulation %d of %d (row index %d) at %s ---\n", sim, nrow(grid), rows[sim], Sys.time()))
   cat(sprintf("Params: Nk=%d, Qvect=%s, E=%.2f, cor=%.2f, VAF=%.2f\n", 
               grid[sim, ]$Nk, 
               paste(grid$Qvect[[sim]], collapse = ","), 

@@ -84,7 +84,7 @@ for(sim in 1:nrow(grid)){
     output <- list()
     output$time <- time
   }
-  ext <- './result/Sim1/'  
+  ext <- './result/sim1/'  
   ext <- paste(ext,'CJICA_sim1_',rows[sim], '.Rdata',sep = '')
   save(output,file = ext)
   cat(sprintf("    Result saved to %s\n", ext))

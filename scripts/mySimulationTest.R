@@ -28,22 +28,46 @@ base_grid$Qvect <- Qvect_list[base_grid$Qid]
 
 # Remove Qid if not needed
 grid <- base_grid[, !(names(base_grid) %in% "Qid")]
-args <- commandArgs(TRUE)
-#args <- as.numeric(args)
 
+# Print total grid information
+cat(sprintf("Total grid size: %d rows\n", nrow(grid)))
+
+# Get command line argument
+args <- commandArgs(TRUE)
+if (length(args) == 0) {
+  stop("Please provide a split number as argument")
+}
+sp <- as.numeric(args[1])
+
+# Split grid into chunks of 10 rows each
 splits <- split(1:nrow(grid), ceiling(seq_along(1:nrow(grid))/10))
-sp <- args[1]
+cat(sprintf("Total number of splits: %d\n", length(splits)))
+cat(sprintf("Processing split: %d\n", sp))
+
+# Check if split number is valid
+if (sp > length(splits)) {
+  cat(sprintf("Split %d does not exist. Maximum split number is %d\n", sp, length(splits)))
+  quit(status = 0)  # Exit gracefully, not an error
+}
 
 rows <- splits[[sp]]
-
+cat(sprintf("Processing rows: %s\n", paste(rows, collapse = ", ")))
 
 #### run simulation and c-jica function
 
 Vm <- 2500
 complex <- c(1,3,4,6,7)
 grid <- grid[rows,]
+
+# Create output directory
+output_dir <- './result/sim1/'
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+  cat(sprintf("Created output directory: %s\n", output_dir))
+}
+
 for(sim in 1:nrow(grid)){
-  cat(sprintf("\n--- Running simulation %d of %d (row index %d) ---\n", sim, nrow(grid), rows[sim]))
+  cat(sprintf("\n--- Running simulation %d of %d (row index %d) at %s ---\n", sim, nrow(grid), rows[sim]), Sys.time())
   cat(sprintf("Params: Nk=%d, Qvect=%s, E=%.2f, cor=%.2f, VAF=%.2f\n", 
               grid[sim, ]$Nk, 
               paste(grid$Qvect[[sim]], collapse = ","), 
@@ -84,13 +108,11 @@ for(sim in 1:nrow(grid)){
     output <- list()
     output$time <- time
   }
-  ext <- './result/sim1/'  
-  ext <- paste(ext,'CJICA_sim1_',rows[sim], '.Rdata',sep = '')
-  save(output,file = ext)
-  cat(sprintf("    Result saved to %s\n", ext))
+  
+  # Save results
+  filename <- paste('CJICA_sim1_', rows[sim], '.Rdata', sep = '')
+  filepath <- file.path(output_dir, filename)
+  save(output, file = filepath)
+  cat(sprintf("    Result saved to %s\n", filepath))
 }
 cat("=== CJICA Simulation Script Completed ===\n")
-
-#### analyze
-
-

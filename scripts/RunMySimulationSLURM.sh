@@ -30,8 +30,28 @@ if [ ! -f "./scripts/mySimulationTest.R" ]; then
     exit 1
 fi
 
-# Create output directory for individual job logs
+# Create output directories
 mkdir -p job_logs
+mkdir -p result/sim1
+
+# Calculate total grid size and number of splits
+echo "Calculating grid dimensions..."
+
+# Grid parameters from R script:
+# Nk <- c(50, 100)  # 2 values
+# Qvect_list <- list(c(3,3), c(8,8))  # 2 values  
+# E <- c(0.2, 0.6)  # 2 values
+# cor <- c(0, .60, .94)  # 3 values
+# VAF <- c(0.8, 1)  # 2 values
+# rep <- 1:5  # 5 values
+
+TOTAL_GRID_SIZE=$((2 * 2 * 2 * 3 * 2 * 5))  # = 240
+ROWS_PER_SPLIT=10
+NUM_SPLITS=$(((TOTAL_GRID_SIZE + ROWS_PER_SPLIT - 1) / ROWS_PER_SPLIT))  # Ceiling division
+
+echo "Total grid combinations: $TOTAL_GRID_SIZE"
+echo "Rows per split: $ROWS_PER_SPLIT"
+echo "Number of splits needed: $NUM_SPLITS"
 
 # Track background process PIDs
 pids=()
@@ -39,7 +59,7 @@ pids=()
 echo "Starting parallel R jobs..."
 
 # Run R scripts in parallel using background processes
-for i in {1..10}; do
+for i in $(seq 1 $NUM_SPLITS); do
     echo "Starting job $i at $(date)"
     
     # Run with output redirection and error handling
@@ -59,7 +79,7 @@ for i in {1..10}; do
     sleep 1
 done
 
-echo "All jobs launched. Waiting for completion..."
+echo "All $NUM_SPLITS jobs launched. Waiting for completion..."
 echo "Active PIDs: ${pids[@]}"
 
 # Wait for all background processes and check their exit status
@@ -82,15 +102,15 @@ done
 # Print summary
 echo "="*50
 echo "Job completion summary:"
-echo "Total jobs: 10"
+echo "Total jobs: $NUM_SPLITS"
 echo "Failed jobs: $failed_jobs"
-echo "Successful jobs: $((10 - failed_jobs))"
+echo "Successful jobs: $((NUM_SPLITS - failed_jobs))"
 
 # Print individual job logs for failed jobs if any
 if [ $failed_jobs -gt 0 ]; then
     echo "="*50
     echo "Failed job logs:"
-    for i in {1..10}; do
+    for i in $(seq 1 $NUM_SPLITS); do
         if [ -f "job_logs/job_${i}.log" ]; then
             last_line=$(tail -1 "job_logs/job_${i}.log")
             if [[ $last_line == *"exit code: 0"* ]]; then

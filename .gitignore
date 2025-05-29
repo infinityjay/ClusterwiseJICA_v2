@@ -54,3 +54,4 @@ rsconnect/
 *.out
 *.err
 job_logs/
+result/

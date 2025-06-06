@@ -104,9 +104,27 @@ for(sim in 1:nrow(grid)){
     )
     time <- proc.time() - ptm
     cat(sprintf("    Completed in %.2f seconds\n", time[3]))
+
+    # calculate ARI
+
+    
+
+    # calculate recovery rate
+
+
+
+
+    # generate output
     output <- list()
+    # original dataset
     output$original_x <- simdata$Xe
-    output$cjica <- cjica
+    # best solution
+
+    # params
+    
+
+    output$simdata <- simdata
+
     # Save results
     Qvect_str <- paste(grid$Qvect[[sim]], collapse = "_")
     filename <- sprintf('CJICA_sim1_N%d_Q%s_E%.1f_cor%.2f_VAF%.1f_comp%d_rep%d.Rdata',

@@ -3,8 +3,8 @@
 #SBATCH -N 1
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
-#SBATCH --partition="cpu-short"
-#SBATCH --time=3:59:00
+#SBATCH --partition="cpu-long"
+#SBATCH --time=23:59:00
 #SBATCH --mem=1G
 
 # Print job information
@@ -46,7 +46,7 @@ echo "Calculating grid dimensions..."
 # rep <- 1:5  # 5 values
 
 TOTAL_GRID_SIZE=$((2 * 2 * 2 * 3 * 2 * 5))  # = 240
-ROWS_PER_SPLIT=10
+ROWS_PER_SPLIT=5
 NUM_SPLITS=$(((TOTAL_GRID_SIZE + ROWS_PER_SPLIT - 1) / ROWS_PER_SPLIT))  # Ceiling division
 
 echo "Total grid combinations: $TOTAL_GRID_SIZE"

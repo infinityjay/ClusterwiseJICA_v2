@@ -3,7 +3,6 @@
 .Rapp.history
 
 # Session Data files
-/data/*
 .RDataTmp
 
 # User-specific files
@@ -55,3 +54,5 @@ rsconnect/
 *.err
 job_logs/
 result/
+simulation_data/
+*.RData

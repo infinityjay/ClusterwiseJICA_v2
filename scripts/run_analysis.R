@@ -103,8 +103,8 @@ for(comp in complex) {
     end_time <- Sys.time()
     cat("Analysis (use Chull) completed in", difftime(end_time, start_time, units = "mins"), "minutes\n")
     # calculate ARI
-    aic_sums <- sapply(cjica_chull, function(res) res$Lir$aicSum)
-    optimal <- cjica_chull[[which.min(aic_sums)]]
+    loss100 <- sapply(seq_along(cjica_chull), function(anom) tail(cjica_chull[[anom]]$aiciter, n = 1))
+    optimal <- cjica[[which.min(loss100)]]
     cjica_chull_ARI <- adjustedRandIndex(simdata$P, optimal$p)
     # calculate turker
     tucker_cor_lap <- unlist(TuckCheck(simdata$S))
@@ -124,12 +124,54 @@ for(comp in complex) {
     }
     # save result
 
-    ## use VAF
+    ## use VAF=0.7
 
-    ## original algorithm, use inpute Q vec
+    
 
 }
+## original algorithm, use inpute Q vec
+nc1 <- c(2,2,2) 
+nc2 <- c(8,8,8)
+if(params$K == 5) {
+    nc1 <- c(2,2,2,2,2)
+    nc2 <- c(8,8,8,8,8)
+}
+## min, all nc = 2
+start_time <- Sys.time()
+cjica_origin_min <- ClusterwiseJICA_varyQ(
+    X = simdata$Xe,
+    k = params$K,
+    nc = nc1
+    useInputQ = T,                                                   
+    starts = 100, 
+    scale = F, 
+    VAF = params$VAF, 
+    complex = 0, 
+    useChull = F, 
+    Vm = Vm
+)
+end_time <- Sys.time()
+cat("Analysis (use Chull) completed in", difftime(end_time, start_time, units = "mins"), "minutes\n")
+# calculate ARI
+loss100 <- sapply(seq_along(cjica_origin_min), function(anom) tail(cjica_origin_min[[anom]]$lossiter, n = 1))
+optimal <- cjica_origin_min[[which.min(loss100)]]
+cjica_origin_min_ARI <- adjustedRandIndex(simdata$P, optimal$p)
+# calculate turker
+tucker_cor_lap <- unlist(TuckCheck(simdata$S))
+clusper <- FindOptimalClusPermut(optimal$p, simdata$P)
 
+if(params$K == 3){
+    tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+    FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+    FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov))
+    
+}else{
+    tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+    FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+    FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov,
+    FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[4]]], Strue = simdata$S[[4]])$BestRecov,
+    FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[5]]], Strue = simdata$S[[5]])$BestRecov))
+}
 
 # Create result filename
 result_filename <- paste0(results_dir, "/result_", gsub("\\.RData$", "", filename), ".RData")

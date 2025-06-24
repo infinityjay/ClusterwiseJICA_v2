@@ -1,0 +1,32 @@
+---
+title: "ILS_image"
+output: html_document
+---
+
+```{r}
+# Load required library
+library(ggplot2)
+
+# Create the solution space (x-axis)
+x <- seq(0, 10, length.out = 1000)
+
+# Create a complex cost function with multiple local minima
+# Using a combination of functions to create the landscape similar to the image
+cost <- 4 + 2*sin(1.2*x) + 1.5*sin(2.5*x + 1) + sin(4*x + 2) + 
+        0.3*x - 0.05*x^2 + 0.003*x^3
+
+
+# Create the plot
+p <- ggplot(data.frame(x = x, cost = cost), aes(x = x, y = cost)) +
+  geom_line(size = 0.5, color = "black") +
+  
+  # Customize axes and labels
+  labs(x = "solution space S", y = "cost") +
+  theme_classic() +
+  
+  # Set axis limits to match the image proportions
+  xlim(0, 10) +
+  ylim(min(cost) - 0.8, max(cost) + 0.8)
+print(p)
+ggsave("iterated_local_search.png", plot = p, width = 8, height = 6, dpi = 300)
+```

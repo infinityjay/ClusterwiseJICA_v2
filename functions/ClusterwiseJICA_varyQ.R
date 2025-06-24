@@ -31,6 +31,7 @@ ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ,
     
     totalSS <- sum(X^2)
     lossiter <- totalSS + 1
+    aiciter <- Inf
     iter <- 0
     
     repeat{
@@ -38,12 +39,12 @@ ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ,
       if(iter >= 2){
         
         if(verbose == TRUE){
-          cat('Start: ', start ,'Iteration ', iter, ' loss value: ', lossiter[iter],'VAF:' ,Lir$vaf ,'\n')    
+          cat('Start: ', start ,'Iteration ', iter, ' loss value: ', aiciter[iter],'VAF:' ,Lir$vaf ,'\n')    
         }
         
       }else{
         if(verbose == TRUE){
-          cat('Start: ', start, 'Iteration ', iter, ' loss value: ', lossiter[iter],'\n')   
+          cat('Start: ', start, 'Iteration ', iter, ' loss value: ', aiciter[iter],'\n')   
         }
       }
       
@@ -87,7 +88,7 @@ ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ,
       
       # algo step 3
       Ahh <- Ahats(X = X, icapara = icaparam)
-      Lir <- XhatsAndLir(X = X, nClus = k, Sr = icaparam$Sr, Ahats = Ahh, Qvec = nc, complex = complex, Vm)
+      Lir <- XhatsAndLir(X = X, nClus = k, Sr = icaparam$Sr, Ahats = Ahh, Qvec = nc, complex = complex, Vm, useInputQ)
       
       # avoid empty clusters
       if( length(unique(Lir$newp)) < k ){
@@ -97,12 +98,22 @@ ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ,
       
       # # avoid clus size lower than nc
       # Lir$newp <- Avoid_nc_N(Lir$newp, Lir$lossvec, nc = nc)
+      if (iter >= 100) break()
       
-      lossiter <- c(lossiter, Lir$loss)
       
-      if( lossiter[iter] - lossiter[iter + 1]  < .00001){
-        break()
+      if(useInputQ) {
+        lossiter <- c(lossiter, Lir$loss)
+        
+          if( lossiter[iter] - lossiter[iter + 1]  < .00001){
+          break()
+        }
+      } else {
+        aiciter <- c(aiciter, Lir$aicSum)
+        if( aiciter[iter] - aiciter[iter + 1]  < 0.001){
+          break()
+        }
       }
+      
     }
     
     
@@ -110,6 +121,7 @@ ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ,
     out$p <- Lir$newp
     out$ica <- icaparam
     out$lossiter <- lossiter
+    out$aiciter <- aiciter
     out$Lir <- Lir
     ResultsStarts[[start]] <- out
   }

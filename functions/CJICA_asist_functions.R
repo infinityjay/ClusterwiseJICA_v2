@@ -284,7 +284,7 @@ Ahats <- function(X, icapara){
 
 # Xhat <- Sr %*% Air
 
-XhatsAndLir <- function(X, nClus, Sr, Ahats, Qvec, complex, Vm){
+XhatsAndLir <- function(X, nClus, Sr, Ahats, Qvec, complex, Vm, useInputQ){
   # todo: N should be different in clusters
   N <- ncol(X)
   V <- Vm
@@ -325,8 +325,13 @@ XhatsAndLir <- function(X, nClus, Sr, Ahats, Qvec, complex, Vm){
   vaf <- ( sum(X^2)-loss) / sum(X^2)
   aicvec <- apply(aic, MARGIN = 1, min)
   aicSum <- sum(aicvec)
-  # newp <- apply(ss, MARGIN = 1, which.min)
+  # use aic to constrain
   newp <- apply(aic, MARGIN = 1, which.min)
+  if(useInputQ) {
+    # original algorithm
+    newp <- apply(ss, MARGIN = 1, which.min)
+  }
+  
   
   out <- list()
   out$newp <- newp

@@ -516,28 +516,37 @@ complexity = 2
 
 ```{r}
 
-data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_K5_Q44566_E04_VAF08$Xe, k = 5, useInputQ = F, starts = 20, scale = F, VAF = 0.8, complex = 2, useChull = T, Vm = 2500)
+data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_K5_Q44566_E04_VAF08$Xe, k = 5, useInputQ = F, starts = 20, scale = F, VAF = 0.8, complex = 2, useChull = T, Vm = 2500, verbose = T)
 save(data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result, file = "./data/data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result.RData")
 
 ```
 
 ```{r}
 load("./data/data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result.RData")
-aic_sums <- sapply(data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result, function(res) res$Lir$aicSum)
-min_index <- which.min(aic_sums)
-optimal <- data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result[[min_index]]
+
+
+
+
+
+
+
+
+loss100 <- sapply(seq_along(data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result), function(anom) tail(data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result[[anom]]$aiciter, n = 1))
+optimal <- data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result[[which.min(loss100)]]
 data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result_ARI <- adjustedRandIndex(
   data_Nk50_K5_Q44566_E04_VAF08$P, 
   optimal$p
 )
 data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp2_chull_result_ARI
+
+
 ```
 
 complexity = 3
 
 ```{r}
 
-data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp3_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_K5_Q44566_E04_VAF08$Xe, , k = 5, useInputQ = F, starts = 20, scale = F, VAF = 0.8, complex = 3, useChull = T, Vm = 2500)
+data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp3_chull_result <- ClusterwiseJICA_varyQ(X = data_Nk50_K5_Q44566_E04_VAF08$Xe, , k = 5, useInputQ = F, starts = 20, scale = F, VAF = 0.8, complex = 3, useChull = T, Vm = 2500, verbose = T)
 save(data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp3_chull_result, file = "./data/data_Nk50_K5_Q44566_E04_VAF08_VAF08_comp3_chull_result.RData")
 
 ```

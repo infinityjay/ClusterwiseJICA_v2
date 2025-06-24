@@ -30,8 +30,6 @@ if (!dir.exists("simulation_data")) {
     dir.create("simulation_data")
 }
 
-print(paste("Starting", nrow(grid), "simulations..."))
-
 for(sim in 1:nrow(grid)){
     cat("Running simulation", sim, "of", nrow(grid), "\n")
     

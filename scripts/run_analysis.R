@@ -1,0 +1,127 @@
+# run_analysis.R
+# Script to process a single simulation file
+
+# Load required libraries
+library("mclust")
+library("multichull")
+source("./functions/data_simulation_functions.R")
+source("./functions/ClusterwiseJICA_varyQ.R")
+source("./functions/ClusterwiseJICA.R")
+source("./functions/CJICA_asist_functions.R")
+source("./functions/ILS_CJICA.R")
+
+# Get command line arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1) {
+    stop("Usage: Rscript process_single_simulation.R <filename>")
+}
+
+filename <- args[1]
+cat("Processing file:", filename, "\n")
+
+# Parse parameters from filename
+# Expected format: sim_X_KY_QZ_EW_VAFV_repR.RData
+parse_filename <- function(fname) {
+    # Remove .RData extension and split by underscores
+    parts <- strsplit(gsub("\\.RData$", "", fname), "_")[[1]]
+    
+    # Extract parameters
+    sim_id <- as.numeric(gsub("sim", "", parts[2]))
+    K <- as.numeric(gsub("K", "", parts[3]))
+    
+    # Extract Q vector (everything between Q and E)
+    q_start <- which(grepl("^Q", parts))
+    e_pos <- which(grepl("^E", parts))
+    q_parts <- parts[(q_start+1):(e_pos-1)]
+    Qvect <- as.numeric(q_parts)
+    
+    E <- as.numeric(gsub("E", "", parts[e_pos]))
+    VAF <- as.numeric(gsub("VAF", "", parts[e_pos + 1]))
+    rep <- as.numeric(gsub("rep", "", parts[e_pos + 2]))
+    
+    return(list(
+        sim_id = sim_id,
+        K = K,
+        Qvect = Qvect,
+        E = E,
+        VAF = VAF,
+        rep = rep
+    ))
+}
+
+# Parse parameters from filename
+params <- parse_filename(filename)
+cat("Parsed parameters:\n")
+cat("  sim_id:", params$sim_id, "\n")
+cat("  K:", params$K, "\n")
+cat("  Qvect:", paste(params$Qvect, collapse = ", "), "\n")
+cat("  E:", params$E, "\n")
+cat("  VAF:", params$VAF, "\n")
+cat("  rep:", params$rep, "\n")
+
+# Set simulation parameters
+Vm <- 500
+Nk <- 100
+M <- 2
+
+# Load simulation data from file
+cat("Loading simulation data from file...\n")
+data_filepath <- file.path("simulation_data", filename)
+
+if (!file.exists(data_filepath)) {
+    stop(paste("Data file not found:", data_filepath))
+}
+
+# create results folder
+results_dir <- "results"
+if (!dir.exists(results_dir)) {
+    dir.create(results_dir)
+}
+
+simdata <- load(data_filepath)  # This loads the 'simdata' object
+cat("Data loaded successfully from:", data_filepath, "\n")
+
+# Run ClusterwiseJICA_varyQ analysis
+cat("Running ClusterwiseJICA_varyQ analysis...\n")
+
+complex <- c(0,1,3,4,6,7)
+
+for(comp in complex) {
+    # not use input Q vector, use Chull
+    start_time <- Sys.time()
+    cjica_chull <- ClusterwiseJICA_varyQ(
+        X = simdata$Xe,
+        k = params$K, 
+        useInputQ = F,                                                   
+        starts = 100, 
+        scale = F, 
+        VAF = params$VAF, 
+        complex = comp, 
+        useChull = T, 
+        Vm = Vm
+    )
+    end_time <- Sys.time()
+    cat("Analysis (use Chull) completed in", difftime(end_time, start_time, units = "mins"), "minutes\n")
+
+    # use VAF
+
+    # original algorithm, use inpute Q vec
+
+}
+
+
+# Create result filename
+result_filename <- paste0(results_dir, "/result_", gsub("\\.RData$", "", filename), ".RData")
+
+# Save analysis results along with parameters (simdata already loaded from file)
+analysis_result <- list(
+    result = result,
+    parameters = params,
+    filename = filename,
+    runtime = difftime(end_time, start_time, units = "mins")
+)
+
+save(analysis_result, file = result_filename)
+cat("Results saved to:", result_filename, "\n")
+
+cat("Job completed successfully!\n")

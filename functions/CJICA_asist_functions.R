@@ -441,7 +441,51 @@ Avoid_nc_N <- function(newcluster, SSminVec, nc) {
   return(newcluster)
 }
 
-
+# Tucker check function
+TuckCheck <- function(S){
+  Tucker <- function(X, Y){
+    return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
+  }
+  K <- length(S)
+  
+  if(K == 5){
+    corMod <- mean(c(Tucker(S[[1]][1:2500,], S[[1]][2501:5000,]) %>% diag() %>% mean,
+                     Tucker(S[[2]][1:2500,], S[[2]][2501:5000,]) %>% diag() %>% mean,
+                     Tucker(S[[3]][1:2500,], S[[3]][2501:5000,]) %>% diag() %>% mean,
+                     Tucker(S[[4]][1:2500,], S[[4]][2501:5000,]) %>% diag() %>% mean,
+                     Tucker(S[[5]][1:2500,], S[[5]][2501:5000,]) %>% diag() %>% mean)
+    )
+    
+    #combn(1:5,2)
+    corClus <- mean(c(Tucker(S[[1]],S[[2]]) %>% diag() %>% mean,
+                      Tucker(S[[1]],S[[3]]) %>% diag() %>% mean,
+                      Tucker(S[[1]],S[[4]]) %>% diag() %>% mean,
+                      Tucker(S[[1]],S[[5]]) %>% diag() %>% mean,
+                      
+                      Tucker(S[[2]],S[[3]]) %>% diag() %>% mean,
+                      Tucker(S[[2]],S[[4]]) %>% diag() %>% mean,
+                      Tucker(S[[2]],S[[5]]) %>% diag() %>% mean,
+                      
+                      Tucker(S[[3]],S[[4]]) %>% diag() %>% mean,
+                      Tucker(S[[3]],S[[5]]) %>% diag() %>% mean,
+                      
+                      Tucker(S[[4]],S[[5]]) %>% diag() %>% mean
+    ))
+    
+  }else if(K == 3){
+    
+    corMod <- mean(c(Tucker(S[[1]][1:2500,], S[[1]][2501:5000,]) %>% diag() %>% mean,
+                     Tucker(S[[2]][1:2500,], S[[2]][2501:5000,]) %>% diag() %>% mean,
+                     Tucker(S[[3]][1:2500,], S[[3]][2501:5000,]) %>% diag() %>% mean))
+    
+    #combn(1:3,2)
+    corClus <- mean(c(Tucker(S[[1]],S[[2]])%>% diag() %>% mean,
+                      Tucker(S[[1]],S[[3]])%>% diag() %>% mean,
+                      Tucker(S[[2]],S[[3]])%>% diag() %>% mean))
+  }
+  
+  return(list(corMod, corClus))
+}
 
 
 

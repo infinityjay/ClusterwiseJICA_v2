@@ -78,7 +78,7 @@ if (!dir.exists(results_dir)) {
     dir.create(results_dir)
 }
 
-simdata <- load(data_filepath)  # This loads the 'simdata' object
+simdata <- load(data_filepath)
 cat("Data loaded successfully from:", data_filepath, "\n")
 
 # Run ClusterwiseJICA_varyQ analysis
@@ -87,7 +87,7 @@ cat("Running ClusterwiseJICA_varyQ analysis...\n")
 complex <- c(0,1,3,4,6,7)
 
 for(comp in complex) {
-    # not use input Q vector, use Chull
+    ## use Chull, not use input Q
     start_time <- Sys.time()
     cjica_chull <- ClusterwiseJICA_varyQ(
         X = simdata$Xe,
@@ -102,10 +102,31 @@ for(comp in complex) {
     )
     end_time <- Sys.time()
     cat("Analysis (use Chull) completed in", difftime(end_time, start_time, units = "mins"), "minutes\n")
+    # calculate ARI
+    aic_sums <- sapply(cjica_chull, function(res) res$Lir$aicSum)
+    optimal <- cjica_chull[[which.min(aic_sums)]]
+    cjica_chull_ARI <- adjustedRandIndex(simdata$P, optimal$p)
+    # calculate turker
+    tucker_cor_lap <- unlist(TuckCheck(simdata$S))
+    clusper <- FindOptimalClusPermut(optimal$p, simdata$P)
+    
+    if(params$K == 3){
+        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov))
+        
+    }else{
+        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[4]]], Strue = simdata$S[[4]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[5]]], Strue = simdata$S[[5]])$BestRecov))
+    }
+    # save result
 
-    # use VAF
+    ## use VAF
 
-    # original algorithm, use inpute Q vec
+    ## original algorithm, use inpute Q vec
 
 }
 

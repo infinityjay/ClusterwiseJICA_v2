@@ -45,6 +45,6 @@ for FILE_PATH in "${DATA_FILES[@]}"; do
 done
 
 echo "All ${#DATA_FILES[@]} jobs submitted!"
-echo "Job status: squeue -u \$USER"
+echo "Job status: squeue -u s4162315"
 echo "Job logs: logs/"
-echo "Cancel all jobs: scancel -u \$USER --name=cjica_*"
+echo "Cancel all jobs: scancel --user=s4162315"

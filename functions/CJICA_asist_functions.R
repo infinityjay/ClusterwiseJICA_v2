@@ -492,6 +492,253 @@ TuckCheck <- function(S){
   return(list(corMod, corClus))
 }
 
+FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
+{
+  # code to search the optimal permutation of estimated ICA components for
+  # comparing it with simulated components
+  # Author(s): Tom F. Wilderjans and minor adjustments by Jeffrey Durieux
+  
+  #JD: code from Tom, adjusted for matrix vs matrix comparison
+  #Sest, Strue (nVoxels x nSources)
+  
+  library(gtools)
+  N_sources = dim(Sest)[2]
+  
+  
+  AllPerms = permutations( n = N_sources , r = N_sources , v = 1:N_sources )
+  nPerms = dim(AllPerms)[1]
+  
+  #Find best permutation
+  BestRecov = -9999
+  BestPerm = -9999
+  for( permtel in 1:nPerms )
+  {
+    if(verbose == TRUE)
+    {
+      if( (permtel%%50) == 0)
+      {
+        print( paste( "perm: " , permtel , "/" , nPerms ) )
+      }
+    }
+    
+    
+    tp = AllPerms[permtel,]
+    tempRecovBlock = matrix( -9999 , 1 , 1 )
+    
+    tempRecovBlock[1] = mean( abs( diag( Tucker(Strue ,
+                                                          Sest[, tp] ) ) ) )
+    # niet nodig als het goed is
+    tempRecov = mean(tempRecovBlock)
+    
+    if( permtel==1 )
+    {
+      BestRecov = tempRecov
+      BestRecovBlock = tempRecovBlock
+      BestPerm = tp
+    }
+    else
+    {
+      if( (tempRecov-BestRecov)>.0000000001 )
+      {
+        BestRecov = tempRecov
+        BestRecovBlock = tempRecovBlock
+        BestPerm = tp
+      }
+    }
+    rm(tp,tempRecov,tempRecovBlock)
+  }
+  Out = list()
+  Out$BestRecov = BestRecov
+  Out$BestRecovBlock = BestRecovBlock
+  Out$BestPerm = BestPerm
+  Out$TuckerMatrix = Tucker(Strue , Sest[, BestPerm] )
+  return(Out)
+}
+
+FindOptimalClusPermut <- function(Pest, Ptrue){
+  # find optimal cluster permutation of estimated clustering
+  # compared to simulated clustering
+  # Author(s): Tom F. Wilderjans and minor adjustments by Jeffrey Durieux
+  clus <- length(unique(Pest))
+  
+  AllPerms = gtools::permutations( n = clus , r = clus)
+  nPerms = dim(AllPerms)[1]
+  
+  BestRecov = -9999
+  BestPerm = -9999
+  for( permtel in 1:nPerms )
+  {
+    if( (permtel%%50) == 0)
+    {
+      print( paste( "perm: " , permtel , "/" , nPerms ) )
+    }
+    
+    tp = AllPerms[permtel,]
+    tempRecovBlock = matrix( -9999 , 1 , 1 )
+    
+    tab <- table(Ptrue, Pest)
+    
+    tempRecovBlock[1] = sum( diag( tab[,tp] ) )
+    
+    tempRecov = mean(tempRecovBlock)
+    
+    if( permtel==1 )
+    {
+      BestRecov = tempRecov
+      BestRecovBlock = tempRecovBlock
+      BestPerm = tp
+    }
+    else
+    {
+      if( (tempRecov-BestRecov)>.0000000001 )
+      {
+        BestRecov = tempRecov
+        BestRecovBlock = tempRecovBlock
+        BestPerm = tp
+      }
+    }
+    rm(tp,tempRecov,tempRecovBlock)
+  }
+  
+  Out = list()
+  Out$BestRecov = BestRecov
+  Out$BestRecovBlock = BestRecovBlock
+  Out$BestPerm = BestPerm
+  return(Out)
+  
+}
 
 
+modRV <- function(X, Y){
+  
+  if(nrow(X) != nrow(Y)){
+    stop('Number of rows of input matrices are not equal')
+  }
+  
+  XXtilde <- ( X %*% t(X) ) - diag (diag( X %*% t(X) ) )
+  YYtilde <- ( Y %*% t(Y) ) - diag (diag( Y %*% t(Y) ) )
+  
+  res <-  ( t(c(XXtilde)) %*% c(YYtilde) ) /
+    ( sqrt( ( t(c(XXtilde)) %*% c(XXtilde)) * ( t(c(YYtilde)) %*% c(YYtilde)) ) )
+  
+  
+  return(res)
+}
 
+perturbation <- function(p, percentage = 0.1){
+  
+  clusters <- sort(unique(p))
+  sel <- ceiling(length(p) * percentage )
+  selected <- sample(1:length(p), size = sel, replace = F)
+  
+  if(length(selected) == 1){
+    # change one cluster
+    oriclus <- p[selected]
+    newclus <- which(clusters != oriclus)
+    
+    if(length(newclus) > 1){
+      newclus <- sample(newclus, size = 1)
+    }
+    
+    np <- replace(p, selected, newclus)
+    
+  }else{
+    # change multiple clusters
+    np <- p
+    for(i in 1:length(selected)){
+      oriclus <- p[selected[i]]
+      newclus <- which(clusters != oriclus)
+      
+      if(length(newclus) > 1){
+        newclus <- sample(newclus, size = 1)
+      }
+      
+      np <- replace(np, selected[i], newclus) # check if this works
+    }
+  }
+  return(np)
+}
+
+clusf <- function(nBlocks, nClus) {
+  #simplyfied cluster generation function using an equal probability
+  clus <- GenerateRandomClustering(nBlocks, nClus, rep(c(1 / nClus), nClus))
+  
+  return(clus)
+}
+
+
+GenerateRandomClustering <- function(nElement , nClust , Prob = NULL)
+{
+  ####GenerateRandomClustering = for Random Starts
+  
+  # Author: Tom F. Wilderjans
+  # nElement: number of elements to be clustered
+  # nClust: number of clusters
+  # Prob (1 x nClust): proportion of elements in each cluster
+  
+  # Added by Jeffrey Durieux: default Prob = equal cluster prob
+  # This done to adjust code later on for potential cluster perbutation?
+  
+  if(is.null(Prob))
+  {
+    Prob <- rep(x = (1/nClust) , nClust)
+  }
+  
+  
+  BestClust = NULL
+  ErrorEncountered = F
+  
+  if (!(length(Prob) == nClust))
+  {
+    cat('there should be as much probabilities as clusters')
+    ErrorEncountered = T
+  }
+  
+  if ((abs(sum(Prob) - 1) > .000000001) | (any(Prob < 0)))
+  {
+    cat('probabilities should sum to one (and cannot be negative)')
+    ErrorEncountered = T
+  }
+  
+  if (!(any(nClust == 1:nElement)))
+  {
+    cat("nClus should be a number between 1 and maximal number of datamatrices (length of DataList)")
+    ErrorEncountered = T
+  }
+  
+  if (!(ErrorEncountered))
+  {
+    if (nElement > nClust)
+    {
+      if (nClust == 1)
+      {
+        BestClust = rep(1 , times = nElement)
+      }
+      else
+      {
+        ProbVV = round(Prob * nElement)
+        if (!(sum(ProbVV) == nElement) |
+            (any(ProbVV < 1)))
+          #not enough elements, or empty clusters
+        {
+          ProbVV = AdjustProb(ProbVV , nElement)
+        }
+        
+        tempclus = rep(1:length(ProbVV) , ProbVV)
+        BestClust = tempclus[sample(1:nElement,size = nElement,replace =
+                                      FALSE)]
+      }
+    }
+    else
+    {
+      BestClust = 1:nClust
+    }
+  }
+  
+  if (!(length(unique(BestClust)) == nClust))
+  {
+    BestClust = NULL
+  }
+  
+  return(BestClust)
+}

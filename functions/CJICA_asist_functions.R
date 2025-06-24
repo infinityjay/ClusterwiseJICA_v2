@@ -454,11 +454,11 @@ TuckCheck <- function(S){
   K <- length(S)
   
   if(K == 5){
-    corMod <- mean(c(Tucker(S[[1]][1:2500,], S[[1]][2501:5000,]) %>% diag() %>% mean,
-                     Tucker(S[[2]][1:2500,], S[[2]][2501:5000,]) %>% diag() %>% mean,
-                     Tucker(S[[3]][1:2500,], S[[3]][2501:5000,]) %>% diag() %>% mean,
-                     Tucker(S[[4]][1:2500,], S[[4]][2501:5000,]) %>% diag() %>% mean,
-                     Tucker(S[[5]][1:2500,], S[[5]][2501:5000,]) %>% diag() %>% mean)
+    corMod <- mean(c(Tucker(S[[1]][1:500,], S[[1]][501:1000,]) %>% diag() %>% mean,
+                     Tucker(S[[2]][1:500,], S[[2]][501:1000,]) %>% diag() %>% mean,
+                     Tucker(S[[3]][1:500,], S[[3]][501:1000,]) %>% diag() %>% mean,
+                     Tucker(S[[4]][1:500,], S[[4]][501:1000,]) %>% diag() %>% mean,
+                     Tucker(S[[5]][1:500,], S[[5]][501:1000,]) %>% diag() %>% mean)
     )
     
     #combn(1:5,2)
@@ -479,9 +479,9 @@ TuckCheck <- function(S){
     
   }else if(K == 3){
     
-    corMod <- mean(c(Tucker(S[[1]][1:2500,], S[[1]][2501:5000,]) %>% diag() %>% mean,
-                     Tucker(S[[2]][1:2500,], S[[2]][2501:5000,]) %>% diag() %>% mean,
-                     Tucker(S[[3]][1:2500,], S[[3]][2501:5000,]) %>% diag() %>% mean))
+    corMod <- mean(c(Tucker(S[[1]][1:500,], S[[1]][501:1000,]) %>% diag() %>% mean,
+                     Tucker(S[[2]][1:500,], S[[2]][501:1000,]) %>% diag() %>% mean,
+                     Tucker(S[[3]][1:500,], S[[3]][501:1000,]) %>% diag() %>% mean))
     
     #combn(1:3,2)
     corClus <- mean(c(Tucker(S[[1]],S[[2]])%>% diag() %>% mean,
@@ -608,6 +608,9 @@ FindOptimalClusPermut <- function(Pest, Ptrue){
   
 }
 
+Tucker <- function(X, Y){
+  return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
+}
 
 modRV <- function(X, Y){
   

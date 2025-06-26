@@ -90,137 +90,11 @@ log_with_time(paste("Data loaded successfully from:", data_filepath))
 # Run ClusterwiseJICA_varyQ analysis
 log_with_time("Running ClusterwiseJICA_varyQ analysis...")
 
-complex <- c(0,1,3,4,6,7)
 
-set.seed(params$sim_id)
-for(comp in complex) {
-    log_with_time(paste("Starting analysis for complexity:", comp))
-    
-    ### use Chull, not use input Q ###
-    log_with_time("Running analysis with Chull method...")
-    start_time <- Sys.time()
-    cjica_chull <- ClusterwiseJICA_varyQ(
-        X = simdata$Xe,
-        k = params$K, 
-        useInputQ = FALSE,                                                   
-        starts = 100, 
-        scale = FALSE, 
-        VAF = params$VAF, 
-        complex = comp, 
-        useChull = TRUE, 
-        Vm = Vm
-    )
-    end_time <- Sys.time()
-    runtime_chull <- difftime(end_time, start_time, units = "mins")
-    log_with_time(paste("Analysis (use Chull) completed in", round(runtime_chull, 2), "minutes"))
-    
-    # calculate ARI
-    loss100 <- sapply(seq_along(cjica_chull), function(anom) tail(cjica_chull[[anom]]$aiciter, n = 1))
-    optimal <- cjica_chull[[which.min(loss100)]]
-    cjica_chull_ARI <- adjustedRandIndex(simdata$P, optimal$p)
-    log_with_time(paste("Chull ARI calculated:", round(cjica_chull_ARI, 4)))
-    
-    # calculate tucker
-    tucker_cor_lap <- unlist(TuckCheck(simdata$S))
-    clusper <- FindOptimalClusPermut(optimal$p, simdata$P)
-    
-    if(params$K == 3){
-        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov))
-        
-    }else{
-        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[4]]], Strue = simdata$S[[4]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[5]]], Strue = simdata$S[[5]])$BestRecov))
-    }
-    log_with_time(paste("Chull Tucker S calculated:", round(tucker_S, 4)))
-    
-    # save result
-    # Create result filename
-    result_filename <- paste0(results_dir, "/result_chull_", comp, "_", gsub("\\.RData$", "", filename), ".RData")
-    # Save analysis results along with parameters
-    analysis_result <- list(
-        params = params,
-        seed = params$sim_id,
-        complex = comp,
-        ari = cjica_chull_ARI,
-        tucker_S = tucker_S,
-        Araw = optimal$ica$Mr,
-        runtime = runtime_chull,
-        optimal = optimal,
-        aicloss = loss100,
-        tuckercheck = tucker_cor_lap
-    )
-    save(analysis_result, file = result_filename)
-    log_with_time(paste("Chull results saved to:", result_filename))
 
-    ### use VAF, not use chull ###
-    log_with_time("Running analysis with VAF method...")
-    start_time <- Sys.time()
-    cjica_vaf <- ClusterwiseJICA_varyQ(
-        X = simdata$Xe,
-        k = params$K, 
-        useInputQ = FALSE,                                                   
-        starts = 100, 
-        scale = FALSE, 
-        VAF = params$VAF, 
-        complex = comp, 
-        useChull = FALSE, 
-        Vm = Vm
-    )
-    end_time <- Sys.time()
-    runtime_vaf <- difftime(end_time, start_time, units = "mins")
-    log_with_time(paste("Analysis (use VAF) completed in", round(runtime_vaf, 2), "minutes"))
-    
-    # calculate ARI
-    loss100 <- sapply(seq_along(cjica_vaf), function(anom) tail(cjica_vaf[[anom]]$aiciter, n = 1))
-    optimal <- cjica_vaf[[which.min(loss100)]]  # Fixed: was using undefined 'cjica'
-    cjica_vaf_ARI <- adjustedRandIndex(simdata$P, optimal$p)
-    log_with_time(paste("VAF ARI calculated:", round(cjica_vaf_ARI, 4)))
-    
-    # calculate tucker
-    tucker_cor_lap <- unlist(TuckCheck(simdata$S))
-    clusper <- FindOptimalClusPermut(optimal$p, simdata$P)
-    
-    if(params$K == 3){
-        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov))
-        
-    }else{
-        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[4]]], Strue = simdata$S[[4]])$BestRecov,
-        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[5]]], Strue = simdata$S[[5]])$BestRecov))
-    }
-    log_with_time(paste("VAF Tucker S calculated:", round(tucker_S, 4)))
-    
-    # save result
-    # Create result filename
-    result_filename <- paste0(results_dir, "/result_vaf_", comp, "_", gsub("\\.RData$", "", filename), ".RData")
 
-    # Save analysis results along with parameters
-    analysis_result <- list(
-        params = params,
-        seed = params$sim_id,
-        complex = comp,
-        ari = cjica_vaf_ARI,
-        tucker_S = tucker_S,
-        Araw = optimal$ica$Mr,
-        runtime = runtime_vaf,
-        optimal = optimal,
-        aicloss = loss100,
-        tuckercheck = tucker_cor_lap
-    )
-    save(analysis_result, file = result_filename)
-    log_with_time(paste("VAF results saved to:", result_filename))
-    
-    log_with_time(paste("Completed analysis for complexity:", comp))
-}
+
+
 
 log_with_time("Starting original algorithm analysis...")
 
@@ -355,5 +229,145 @@ analysis_result <- list(
 )
 save(analysis_result, file = result_filename)
 log_with_time(paste("Original max results saved to:", result_filename))
+
+
+
+
+
+
+
+
+complex <- c(0,1,3,4,6,7)
+
+set.seed(params$sim_id)
+for(comp in complex) {
+    log_with_time(paste("Starting analysis for complexity:", comp))
+    
+    ### use Chull, not use input Q ###
+    log_with_time("Running analysis with Chull method...")
+    start_time <- Sys.time()
+    cjica_chull <- ClusterwiseJICA_varyQ(
+        X = simdata$Xe,
+        k = params$K, 
+        useInputQ = FALSE,                                                   
+        starts = 100, 
+        scale = FALSE, 
+        VAF = params$VAF, 
+        complex = comp, 
+        useChull = TRUE, 
+        Vm = Vm
+    )
+    end_time <- Sys.time()
+    runtime_chull <- difftime(end_time, start_time, units = "mins")
+    log_with_time(paste("Analysis (use Chull) completed in", round(runtime_chull, 2), "minutes"))
+    
+    # calculate ARI
+    loss100 <- sapply(seq_along(cjica_chull), function(anom) tail(cjica_chull[[anom]]$aiciter, n = 1))
+    optimal <- cjica_chull[[which.min(loss100)]]
+    cjica_chull_ARI <- adjustedRandIndex(simdata$P, optimal$p)
+    log_with_time(paste("Chull ARI calculated:", round(cjica_chull_ARI, 4)))
+    
+    # calculate tucker
+    tucker_cor_lap <- unlist(TuckCheck(simdata$S))
+    clusper <- FindOptimalClusPermut(optimal$p, simdata$P)
+    
+    if(params$K == 3){
+        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov))
+        
+    }else{
+        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[4]]], Strue = simdata$S[[4]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[5]]], Strue = simdata$S[[5]])$BestRecov))
+    }
+    log_with_time(paste("Chull Tucker S calculated:", round(tucker_S, 4)))
+    
+    # save result
+    # Create result filename
+    result_filename <- paste0(results_dir, "/result_chull_", comp, "_", gsub("\\.RData$", "", filename), ".RData")
+    # Save analysis results along with parameters
+    analysis_result <- list(
+        params = params,
+        seed = params$sim_id,
+        complex = comp,
+        ari = cjica_chull_ARI,
+        tucker_S = tucker_S,
+        Araw = optimal$ica$Mr,
+        runtime = runtime_chull,
+        optimal = optimal,
+        aicloss = loss100,
+        tuckercheck = tucker_cor_lap
+    )
+    save(analysis_result, file = result_filename)
+    log_with_time(paste("Chull results saved to:", result_filename))
+
+    ### use VAF, not use chull ###
+    log_with_time("Running analysis with VAF method...")
+    start_time <- Sys.time()
+    cjica_vaf <- ClusterwiseJICA_varyQ(
+        X = simdata$Xe,
+        k = params$K, 
+        useInputQ = FALSE,                                                   
+        starts = 100, 
+        scale = FALSE, 
+        VAF = params$VAF, 
+        complex = comp, 
+        useChull = FALSE, 
+        Vm = Vm
+    )
+    end_time <- Sys.time()
+    runtime_vaf <- difftime(end_time, start_time, units = "mins")
+    log_with_time(paste("Analysis (use VAF) completed in", round(runtime_vaf, 2), "minutes"))
+    
+    # calculate ARI
+    loss100 <- sapply(seq_along(cjica_vaf), function(anom) tail(cjica_vaf[[anom]]$aiciter, n = 1))
+    optimal <- cjica_vaf[[which.min(loss100)]] 
+    cjica_vaf_ARI <- adjustedRandIndex(simdata$P, optimal$p)
+    log_with_time(paste("VAF ARI calculated:", round(cjica_vaf_ARI, 4)))
+    
+    # calculate tucker
+    tucker_cor_lap <- unlist(TuckCheck(simdata$S))
+    clusper <- FindOptimalClusPermut(optimal$p, simdata$P)
+    
+    if(params$K == 3){
+        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov))
+        
+    }else{
+        tucker_S <- mean(c(FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[1]]], Strue = simdata$S[[1]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[2]]], Strue = simdata$S[[2]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[3]]], Strue = simdata$S[[3]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[4]]], Strue = simdata$S[[4]])$BestRecov,
+        FindOptimalPermutSingle(optimal$ica$Sr[[clusper$BestPerm[5]]], Strue = simdata$S[[5]])$BestRecov))
+    }
+    log_with_time(paste("VAF Tucker S calculated:", round(tucker_S, 4)))
+    
+    # save result
+    # Create result filename
+    result_filename <- paste0(results_dir, "/result_vaf_", comp, "_", gsub("\\.RData$", "", filename), ".RData")
+
+    # Save analysis results along with parameters
+    analysis_result <- list(
+        params = params,
+        seed = params$sim_id,
+        complex = comp,
+        ari = cjica_vaf_ARI,
+        tucker_S = tucker_S,
+        Araw = optimal$ica$Mr,
+        runtime = runtime_vaf,
+        optimal = optimal,
+        aicloss = loss100,
+        tuckercheck = tucker_cor_lap
+    )
+    save(analysis_result, file = result_filename)
+    log_with_time(paste("VAF results saved to:", result_filename))
+    
+    log_with_time(paste("Completed analysis for complexity:", comp))
+}
+
 
 log_with_time("Job completed successfully!")

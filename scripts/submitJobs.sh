@@ -2,8 +2,15 @@
 
 # submitJob.sh - Submit individual jobs for each simulation file
 
+module load R/4.4.0-gfbf-2023a
+
 # Set the path to your simulation data folder
-SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/simulation_data"
+# SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/simulation_data"
+# use test data
+SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/data_test"
+
+# remove the previous logs
+rm -rf ./logs
 
 # Create directories for logs if they don't exist
 mkdir -p logs

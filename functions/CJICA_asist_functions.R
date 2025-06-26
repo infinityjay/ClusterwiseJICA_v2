@@ -393,6 +393,81 @@ SearchEmptyClusters <- function(nClus, newcluster, SSminVec) {
   return(newcluster)
 }
 
+# avoid cluster subjects smaller than 3
+SearchSmallClusters <- function(nClus, newcluster, SSminVec, minSize = 3) {
+  
+  OriCluster <- 1:nClus
+  
+  # Check how many members are in each cluster
+  clusterSizes <- table(factor(newcluster, levels = OriCluster))
+  
+  # Identify clusters that have fewer than minSize members
+  SmallClusters <- as.numeric(names(clusterSizes[clusterSizes < minSize]))
+  
+  if (length(SmallClusters) == 0) {
+    return(newcluster)  # all clusters meet the minimum size
+  }
+  
+  # Process each small cluster one by one
+  for (smallCluster in SmallClusters) {
+    currentSize <- clusterSizes[as.character(smallCluster)]
+    needToAdd <- minSize - currentSize
+    
+    if (needToAdd <= 0) next  # Skip if already meets minimum
+    
+    cat('Processing small cluster', smallCluster, 'which has', currentSize, 'subjects, needs', needToAdd, 'more.\n')
+    
+    # For each subject needed, find the globally worst SS subject that can be moved
+    for (i in 1:needToAdd) {
+      # Get current cluster sizes (updated after each move)
+      currentClusterSizes <- table(factor(newcluster, levels = OriCluster))
+      
+      # Find all subjects that can be moved (from clusters with > minSize members)
+      movableSubjects <- which(currentClusterSizes[as.character(newcluster)] > minSize)
+      
+      # If no subjects can be moved, break
+      if (length(movableSubjects) == 0) {
+        cat('SearchSmallClusters: Warning - no more subjects can be moved to cluster', smallCluster, '\n')
+        break
+      }
+      
+      # Find the subject with the worst (highest) SS value among movable subjects
+      movableSSValues <- SSminVec[movableSubjects]
+      worstSubjectIndex <- which.max(movableSSValues)
+      worstSubject <- movableSubjects[worstSubjectIndex]
+      
+      # Record original cluster before moving
+      originalCluster <- newcluster[worstSubject]
+      
+      # Move this worst subject to the small cluster
+      newcluster[worstSubject] <- smallCluster
+      
+      cat('Moved subject', worstSubject, 'with SS value', SSminVec[worstSubject], 
+          'from cluster', originalCluster, 'to cluster', smallCluster, '\n')
+      
+      # Verify the move worked
+      newClusterSizes <- table(factor(newcluster, levels = OriCluster))
+      cat('Cluster', originalCluster, 'now has', newClusterSizes[as.character(originalCluster)], 'subjects\n')
+      cat('Cluster', smallCluster, 'now has', newClusterSizes[as.character(smallCluster)], 'subjects\n')
+    }
+    
+    # Update cluster sizes for next small cluster
+    clusterSizes <- table(factor(newcluster, levels = OriCluster))
+  }
+  
+  # Final check
+  finalSizes <- table(factor(newcluster, levels = OriCluster))
+  remainingSmall <- names(finalSizes[finalSizes < minSize])
+  
+  if (length(remainingSmall) > 0) {
+    cat('SearchSmallClusters: Warning - clusters', paste(remainingSmall, collapse = ', '), 
+        'still have fewer than', minSize, 'subjects.\n')
+  }
+  
+  return(newcluster)
+}
+
+
 # Thu Oct 22 11:02:22 2020
 # Author: Jeffrey Durieux, MSc
 

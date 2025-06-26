@@ -90,13 +90,17 @@ ClusterwiseJICA_varyQ <- function(X, k = 4, starts = 10, nc = c(5,5), useInputQ,
       Ahh <- Ahats(X = X, icapara = icaparam)
       Lir <- XhatsAndLir(X = X, nClus = k, Sr = icaparam$Sr, Ahats = Ahh, Qvec = nc, complex = complex, Vm, useInputQ)
       
-      # avoid empty clusters
-      if( length(unique(Lir$newp)) < k ){
-        Lir$newp <- SearchEmptyClusters(nClus = k, newcluster = Lir$newp, 
-                            SSminVec = Lir$aicvec)
-      }
+      # # avoid empty clusters
+      # if( length(unique(Lir$newp)) < k ){
+      #   Lir$newp <- SearchEmptyClusters(nClus = k, newcluster = Lir$newp, 
+      #                       SSminVec = Lir$aicvec)
+      # }
       
-      # # avoid clus size lower than nc
+      # avoid clus size lower than 3
+      Lir$newp <- SearchSmallClusters(nClus = k, newcluster = Lir$newp, 
+                                      SSminVec = Lir$aicvec, minSize = 3)
+      
+      
       # Lir$newp <- Avoid_nc_N(Lir$newp, Lir$lossvec, nc = nc)
       if (iter >= 100) break()
       

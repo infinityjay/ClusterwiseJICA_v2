@@ -45,7 +45,7 @@ for FILE_PATH in "${DATA_FILES[@]}"; do
            --output="logs/%x_%j.out" \
            --error="logs/%x_%j.err" \
            --mail-type=FAIL \
-           --wrap="module load R/4.3.0; cd /home/s4162315/cjica/ClusterwiseJICA_v2/; Rscript ./scripts/run_analysis.R $FILENAME"
+           --wrap="module load R/4.4.0-gfbf-2023a; cd /home/s4162315/cjica/ClusterwiseJICA_v2/; Rscript ./scripts/run_analysis.R $FILENAME"
     
     # Small delay to avoid overwhelming the scheduler
     sleep 0.1

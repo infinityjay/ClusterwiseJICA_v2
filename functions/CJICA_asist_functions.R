@@ -30,6 +30,7 @@ cal_nc <- function(X, threshold = 0.8, useChull = TRUE) {
     # transfer the dim to (subjects, features)
     data = t(data)
     Maxnc <- min(dim(data))
+    
     # Skip if trivial
     if (Maxnc == 1 || nrow(data) <= 1 || ncol(data) == 0) {
       nc_vector <- c(nc_vector, 1)
@@ -39,16 +40,19 @@ cal_nc <- function(X, threshold = 0.8, useChull = TRUE) {
     
     vaf <- NULL
     sstotal = sum(data^2)
+    
     # use PCA here
     # use CHull, complexity = components number, fit = sse or vaf.
     components <- prcomp(data, center = FALSE)
+    
     for (compnr in 1:Maxnc) {
       sse = sum((data - components$x[,1:compnr] %*% t(components$rotation[,1:compnr]))^2)
       vaf = c(vaf, (sstotal- sse) / sstotal)
     }
+    
     if (useChull) {
       comp.fit <- cbind(c(1:Maxnc), vaf)
-      comp.fit <- as.data.frame(comp.fit) 
+      comp.fit <- as.data.frame(comp.fit)
       colnames(comp.fit) <- c("complexity", "fit")
       
       chull_result <- tryCatch({
@@ -60,13 +64,17 @@ cal_nc <- function(X, threshold = 0.8, useChull = TRUE) {
       
       # Check if result is a valid CHull object
       if (inherits(chull_result, "CHull") && !is.null(chull_result$Solution$complexity)) {
-        nc_vector <- c(nc_vector, chull_result$Solution$complexity)
+        nc_value <- chull_result$Solution$complexity
       } else {
-        nc_vector <- c(nc_vector, 1)
+        nc_value <- 1
       }
     } else {
-      nc_vector <- c(nc_vector, min(which(vaf >= threshold)))
+      nc_value <- min(which(vaf >= threshold))
     }
+    
+    # limit the nc value at 8
+    nc_value <- min(nc_value, 8)
+    nc_vector <- c(nc_vector, nc_value)
   }
   
   return(nc_vector)
@@ -408,51 +416,49 @@ SearchSmallClusters <- function(nClus, newcluster, SSminVec, minSize = 3) {
     return(newcluster)  # all clusters meet the minimum size
   }
   
-  # Process each small cluster one by one
   for (smallCluster in SmallClusters) {
     currentSize <- clusterSizes[as.character(smallCluster)]
     needToAdd <- minSize - currentSize
     
-    if (needToAdd <= 0) next  # Skip if already meets minimum
+    if (needToAdd <= 0) next
     
     cat('Processing small cluster', smallCluster, 'which has', currentSize, 'subjects, needs', needToAdd, 'more.\n')
     
-    # For each subject needed, find the globally worst SS subject that can be moved
     for (i in 1:needToAdd) {
-      # Get current cluster sizes (updated after each move)
+      # Recompute cluster sizes
       currentClusterSizes <- table(factor(newcluster, levels = OriCluster))
       
-      # Find all subjects that can be moved (from clusters with > minSize members)
-      movableSubjects <- which(currentClusterSizes[as.character(newcluster)] > minSize)
+      # Find the largest cluster that has > minSize members
+      eligibleClusters <- which(currentClusterSizes > minSize)
       
-      # If no subjects can be moved, break
-      if (length(movableSubjects) == 0) {
-        cat('SearchSmallClusters: Warning - no more subjects can be moved to cluster', smallCluster, '\n')
+      if (length(eligibleClusters) == 0) {
+        cat('SearchSmallClusters: Warning - no eligible clusters to move from\n')
         break
       }
       
-      # Find the subject with the worst (highest) SS value among movable subjects
-      movableSSValues <- SSminVec[movableSubjects]
-      worstSubjectIndex <- which.max(movableSSValues)
-      worstSubject <- movableSubjects[worstSubjectIndex]
+      # Select the cluster with the most subjects
+      largestCluster <- as.numeric(names(which.max(currentClusterSizes[eligibleClusters])))
+      cat('Selected largest cluster:', largestCluster, 'with', currentClusterSizes[as.character(largestCluster)], 'subjects\n')
       
-      # Record original cluster before moving
-      originalCluster <- newcluster[worstSubject]
+      # Find subjects from the largest cluster
+      subjectsInLargest <- which(newcluster == largestCluster)
       
-      # Move this worst subject to the small cluster
+      # Get SS values for those subjects
+      SSvals <- SSminVec[subjectsInLargest]
+      
+      # Select subject with the worst (highest) SS value
+      worstIndex <- which.max(SSvals)
+      worstSubject <- subjectsInLargest[worstIndex]
+      
+      # Reassign subject to the small cluster
       newcluster[worstSubject] <- smallCluster
       
-      cat('Moved subject', worstSubject, 'with SS value', SSminVec[worstSubject], 
-          'from cluster', originalCluster, 'to cluster', smallCluster, '\n')
+      cat('Moved subject', worstSubject, 'with SS value', SSminVec[worstSubject],
+          'from cluster', largestCluster, 'to cluster', smallCluster, '\n')
       
-      # Verify the move worked
-      newClusterSizes <- table(factor(newcluster, levels = OriCluster))
-      cat('Cluster', originalCluster, 'now has', newClusterSizes[as.character(originalCluster)], 'subjects\n')
-      cat('Cluster', smallCluster, 'now has', newClusterSizes[as.character(smallCluster)], 'subjects\n')
+      # Update clusterSizes
+      clusterSizes <- table(factor(newcluster, levels = OriCluster))
     }
-    
-    # Update cluster sizes for next small cluster
-    clusterSizes <- table(factor(newcluster, levels = OriCluster))
   }
   
   # Final check

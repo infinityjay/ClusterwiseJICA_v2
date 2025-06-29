@@ -406,68 +406,68 @@ SearchSmallClusters <- function(nClus, newcluster, SSminVec, minSize = 3) {
   
   OriCluster <- 1:nClus
   
-  # Check how many members are in each cluster
+  # Pre-check: Ensure constraint is feasible
+  totalSubjects <- length(newcluster)
+  theoreticalMinimum <- nClus * minSize
+  
+  if (totalSubjects < theoreticalMinimum) {
+    warning("Impossible to satisfy constraint: need ", theoreticalMinimum, " subjects, have ", totalSubjects)
+    return(newcluster)
+  }
+  
+  # Calculate exact moves needed
   clusterSizes <- table(factor(newcluster, levels = OriCluster))
+  deficitSubjects <- sum(pmax(0, minSize - clusterSizes))
   
-  # Identify clusters that have fewer than minSize members
-  SmallClusters <- as.numeric(names(clusterSizes[clusterSizes < minSize]))
-  
-  if (length(SmallClusters) == 0) {
-    return(newcluster)  # all clusters meet the minimum size
+  if (deficitSubjects == 0) {
+    return(newcluster)  # Already satisfies constraint
   }
   
-  for (smallCluster in SmallClusters) {
-    currentSize <- clusterSizes[as.character(smallCluster)]
-    needToAdd <- minSize - currentSize
+  # Main redistribution loop with proper termination conditions
+  moveCount <- 0
+  maxMoves <- deficitSubjects * 2  # Safety limit to prevent infinite loops
+  
+  while (moveCount < maxMoves) {
+    clusterSizes <- table(factor(newcluster, levels = OriCluster))
     
-    if (needToAdd <= 0) next
-    
-    cat('Processing small cluster', smallCluster, 'which has', currentSize, 'subjects, needs', needToAdd, 'more.\n')
-    
-    for (i in 1:needToAdd) {
-      # Recompute cluster sizes
-      currentClusterSizes <- table(factor(newcluster, levels = OriCluster))
-      
-      # Find the largest cluster that has > minSize members
-      eligibleClusters <- which(currentClusterSizes > minSize)
-      
-      if (length(eligibleClusters) == 0) {
-        cat('SearchSmallClusters: Warning - no eligible clusters to move from\n')
-        break
-      }
-      
-      # Select the cluster with the most subjects
-      largestCluster <- as.numeric(names(which.max(currentClusterSizes[eligibleClusters])))
-      cat('Selected largest cluster:', largestCluster, 'with', currentClusterSizes[as.character(largestCluster)], 'subjects\n')
-      
-      # Find subjects from the largest cluster
-      subjectsInLargest <- which(newcluster == largestCluster)
-      
-      # Get SS values for those subjects
-      SSvals <- SSminVec[subjectsInLargest]
-      
-      # Select subject with the worst (highest) SS value
-      worstIndex <- which.max(SSvals)
-      worstSubject <- subjectsInLargest[worstIndex]
-      
-      # Reassign subject to the small cluster
-      newcluster[worstSubject] <- smallCluster
-      
-      cat('Moved subject', worstSubject, 'with SS value', SSminVec[worstSubject],
-          'from cluster', largestCluster, 'to cluster', smallCluster, '\n')
-      
-      # Update clusterSizes
-      clusterSizes <- table(factor(newcluster, levels = OriCluster))
+    # Check if all clusters meet minimum size requirement
+    smallClusters <- which(clusterSizes < minSize)
+    if (length(smallClusters) == 0) {
+      cat("All clusters now meet minimum size requirement after", moveCount, "moves\n")
+      break  # Success - all clusters >= minSize
     }
+    
+    # Find clusters that can donate subjects
+    largeClusters <- which(clusterSizes > minSize)
+    if (length(largeClusters) == 0) {
+      warning("Cannot satisfy minimum size constraint - no clusters available to donate subjects")
+      break  # Impossible to continue
+    }
+    
+    # Select largest donor and smallest recipient (most efficient)
+    donorCluster <- largeClusters[which.max(clusterSizes[largeClusters])]
+    recipientCluster <- smallClusters[which.min(clusterSizes[smallClusters])]
+    
+    # Find worst subject in donor cluster
+    donorSubjects <- which(newcluster == donorCluster)
+    worstSubjectIdx <- which.max(SSminVec[donorSubjects])
+    worstSubject <- donorSubjects[worstSubjectIdx]
+    
+    # Move subject
+    newcluster[worstSubject] <- recipientCluster
+    moveCount <- moveCount + 1
   }
   
-  # Final check
+  # Final logging of cluster sizes
   finalSizes <- table(factor(newcluster, levels = OriCluster))
-  remainingSmall <- names(finalSizes[finalSizes < minSize])
+  cat("Final cluster sizes:", as.numeric(finalSizes), "\n")
   
+  # Verify all clusters meet minimum size requirement
+  remainingSmall <- which(finalSizes < minSize)
   if (length(remainingSmall) > 0) {
-    cat('SearchSmallClusters: Warning - clusters', paste(remainingSmall, collapse = ', '), 
-        'still have fewer than', minSize, 'subjects.\n')
+    warning("Clusters ", paste(remainingSmall, collapse = ", "), " still have fewer than ", minSize, " subjects")
+  } else {
+    cat("Success: All clusters have at least", minSize, "subjects\n")
   }
   
   return(newcluster)
@@ -626,7 +626,6 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
   log_with_time(paste("dimention of Sest: (", n_row_est,",",n_sources_estimate, "); dimention of Strue: (", n_row_true, ",",n_sources_true, ")"))
   
   if(n_sources_estimate != n_sources_true) {
-    log_with_time("Applying source selection to match number of sources")
     
     # Determine the minimum number of sources to keep both matrices comparable
     # Also limit the source number smaller than 8
@@ -634,6 +633,7 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
     
     # Reduce Sest if it has more sources than needed
     if(n_sources_estimate > n_sources_final) {
+      log_with_time("Applying source selection to Sest")
       sest_selected <- select_top_sources(Sest, n_sources_final, selection_method)
       Sest <- sest_selected$selected_matrix
       log_with_time(paste("Reduced Sest from", n_sources_estimate, "to", n_sources_final, "sources"))

@@ -4,16 +4,17 @@
 
 module load R/4.4.0-gfbf-2023a
 
-# Set the path to your simulation data folder
-# SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/simulation_data"
-# use test data
-SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/data_test"
+# Set the path to simulation data folder
+SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/simulation_data"
+# # use test data
+# SIMULATION_DATA_PATH="/home/s4162315/cjica/ClusterwiseJICA_v2/data_test"
 
 # remove the previous logs
 rm -rf ./logs
 
 # Create directories for logs if they don't exist
 mkdir -p logs
+mkdir -p results
 
 # Get all .RData files in the simulation_data folder
 DATA_FILES=($(ls ${SIMULATION_DATA_PATH}/sim_*.RData 2>/dev/null))
@@ -39,7 +40,7 @@ for FILE_PATH in "${DATA_FILES[@]}"; do
            --nodes=1 \
            --ntasks=1 \
            --cpus-per-task=1 \
-           --mem=4G \
+           --mem=2G \
            --time=23:59:00 \
            --partition="cpu-long" \
            --output="logs/%x_%j.out" \

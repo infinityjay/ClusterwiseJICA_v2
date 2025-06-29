@@ -572,7 +572,37 @@ log_with_time <- function(message) {
     cat("[", timestamp, "] ", message, "\n", sep = "")
 }
 
-FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
+# function to select the top sources
+select_top_sources <- function(S, n_select = 8, method = "variance") {
+  if(ncol(S) <= n_select) {
+    log_with_time("Number of sources already within limit")
+    return(list(selected_matrix = S, selected_indices = 1:ncol(S)))
+  }
+  
+  log_with_time(paste("Reducing from", ncol(S), "to", n_select, "sources using", method))
+  
+  if(method == "variance") {
+    # Select sources with highest variance
+    source_vars <- apply(S, 2, var, na.rm = TRUE)
+    selected_idx <- order(source_vars, decreasing = TRUE)[1:n_select]
+  } else if(method == "energy") {
+    # Select sources with highest energy (sum of squares)
+    source_energy <- apply(S^2, 2, sum, na.rm = TRUE)
+    selected_idx <- order(source_energy, decreasing = TRUE)[1:n_select]
+  } else if(method == "random") {
+    # Random selection
+    selected_idx <- sample(1:ncol(S), n_select)
+  }
+  
+  log_with_time(paste("Selected sources:", paste(selected_idx, collapse = ", ")))
+  
+  return(list(
+    selected_matrix = S[, selected_idx, drop = FALSE],
+    selected_indices = selected_idx
+  ))
+}
+
+FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_method = "variance")
 {
   # code to search the optimal permutation of estimated ICA components for
   # comparing it with simulated components
@@ -582,6 +612,34 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
   #Sest, Strue (nVoxels x nSources)
   
   log_with_time("Starting FindOptimalPermutSingle function")
+  # limit the component number of 2 matrix are same
+  n_sources_estimate <- ncol(Sest)
+  n_row_est <- nrow(Sest)
+  n_sources_true <- ncol(Strue)
+  n_row_true <- nrow(Strue)
+  log_with_time(paste("dimention of Sest: (", n_row_est,",",n_sources_estimate, "); dimention of Strue: (", n_row_true, ",",n_sources_true, ")"))
+  
+  if(n_sources_estimate != n_sources_true) {
+    log_with_time("Applying source selection to match number of sources")
+    
+    # Determine the minimum number of sources to keep both matrices comparable
+    # Also limit the source number smaller than 8
+    n_sources_final <- min(n_sources_estimate, n_sources_true, 8)  
+    
+    # Reduce Sest if it has more sources than needed
+    if(n_sources_estimate > n_sources_final) {
+      sest_selected <- select_top_sources(Sest, n_sources_final, selection_method)
+      Sest <- sest_selected$selected_matrix
+      log_with_time(paste("Reduced Sest from", n_sources_estimate, "to", n_sources_final, "sources"))
+    }
+    
+    # # Reduce Strue if it has more sources than needed
+    # if(n_sources_true > n_sources_final) {
+    #   strue_selected <- select_top_sources(Strue, n_sources_final, selection_method)
+    #   Strue <- strue_selected$selected_matrix
+    #   log_with_time(paste("Reduced Strue from", n_sources_true, "to", n_sources_final, "sources"))
+    # }
+  }
   
   library(gtools)
   N_sources = dim(Sest)[2]
@@ -622,13 +680,11 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
       BestRecov = tempRecov
       BestRecovBlock = tempRecovBlock
       BestPerm = tp
-      log_with_time(paste("Initial best recovery:", BestRecov))
     }
     else
     {
       if( (tempRecov-BestRecov)>.0000000001 )
       {
-        log_with_time(paste("New best recovery found at permutation", permtel, "- value:", tempRecov))
         BestRecov = tempRecov
         BestRecovBlock = tempRecovBlock
         BestPerm = tp
@@ -637,17 +693,13 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
     rm(tp,tempRecov,tempRecovBlock)
   }
   
-  log_with_time("Permutation search completed")
-  log_with_time(paste("Final best recovery:", BestRecov))
-  log_with_time(paste("Best permutation:", paste(BestPerm, collapse = ", ")))
-  
   Out = list()
   Out$BestRecov = BestRecov
   Out$BestRecovBlock = BestRecovBlock
   Out$BestPerm = BestPerm
   Out$TuckerMatrix = Tucker(Strue , Sest[, BestPerm] )
   
-  log_with_time("Function completed")
+  log_with_time("FindOptimalPermutSingle Function completed")
   return(Out)
 }
 

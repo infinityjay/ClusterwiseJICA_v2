@@ -567,6 +567,11 @@ TuckCheck <- function(S){
   return(list(corMod, corClus))
 }
 
+log_with_time <- function(message) {
+    timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+    cat("[", timestamp, "] ", message, "\n", sep = "")
+}
+
 FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
 {
   # code to search the optimal permutation of estimated ICA components for
@@ -576,16 +581,23 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
   #JD: code from Tom, adjusted for matrix vs matrix comparison
   #Sest, Strue (nVoxels x nSources)
   
+  log_with_time("Starting FindOptimalPermutSingle function")
+  
   library(gtools)
   N_sources = dim(Sest)[2]
   
+  log_with_time(paste("Number of sources:", N_sources))
   
   AllPerms = permutations( n = N_sources , r = N_sources , v = 1:N_sources )
   nPerms = dim(AllPerms)[1]
   
+  log_with_time(paste("Total permutations to evaluate:", nPerms))
+  
   #Find best permutation
   BestRecov = -9999
   BestPerm = -9999
+  log_with_time("Starting permutation search")
+  
   for( permtel in 1:nPerms )
   {
     if(verbose == TRUE)
@@ -610,11 +622,13 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
       BestRecov = tempRecov
       BestRecovBlock = tempRecovBlock
       BestPerm = tp
+      log_with_time(paste("Initial best recovery:", BestRecov))
     }
     else
     {
       if( (tempRecov-BestRecov)>.0000000001 )
       {
+        log_with_time(paste("New best recovery found at permutation", permtel, "- value:", tempRecov))
         BestRecov = tempRecov
         BestRecovBlock = tempRecovBlock
         BestPerm = tp
@@ -622,11 +636,18 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE)
     }
     rm(tp,tempRecov,tempRecovBlock)
   }
+  
+  log_with_time("Permutation search completed")
+  log_with_time(paste("Final best recovery:", BestRecov))
+  log_with_time(paste("Best permutation:", paste(BestPerm, collapse = ", ")))
+  
   Out = list()
   Out$BestRecov = BestRecov
   Out$BestRecovBlock = BestRecovBlock
   Out$BestPerm = BestPerm
   Out$TuckerMatrix = Tucker(Strue , Sest[, BestPerm] )
+  
+  log_with_time("Function completed")
   return(Out)
 }
 

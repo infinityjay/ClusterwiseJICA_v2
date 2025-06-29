@@ -52,7 +52,7 @@ rsconnect/
 # script log file
 *.out
 *.err
-job_logs/
+logs/
 result/
 simulation_data/
 *.RData

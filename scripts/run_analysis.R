@@ -65,6 +65,9 @@ log_with_time(paste("  E:", params$E))
 log_with_time(paste("  VAF:", params$VAF))
 log_with_time(paste("  rep:", params$rep))
 
+# set seed for reproduce
+set.seed(params$sim_id)
+
 # Set simulation parameters
 Vm <- 500
 Nk <- 100
@@ -238,8 +241,6 @@ log_with_time(paste("Original max results saved to:", result_filename))
 
 
 complex <- c(0,1,3,4,6,7)
-
-set.seed(params$sim_id)
 for(comp in complex) {
     log_with_time(paste("Starting analysis for complexity:", comp))
     

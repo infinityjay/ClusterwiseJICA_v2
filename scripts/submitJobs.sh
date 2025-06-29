@@ -54,5 +54,5 @@ done
 
 echo "All ${#DATA_FILES[@]} jobs submitted!"
 echo "Job status: squeue -u s4162315"
-echo "Job logs: logs/"
+echo "Check running job numbers: squeue --user=s4162315 | grep ' R ' | wc -l"
 echo "Cancel all jobs: scancel --user=s4162315"

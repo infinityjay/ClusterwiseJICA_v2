@@ -530,7 +530,13 @@ Avoid_nc_N <- function(newcluster, SSminVec, nc) {
 # Tucker check function
 TuckCheck <- function(S){
   Tucker <- function(X, Y){
-    return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
+    X = as.matrix(X)
+    Y = as.matrix(Y)
+    if (dim(X)[2] < 2 ) {
+      return(1 / sqrt(colSums(X^2)) %*% crossprod(X,Y) %*% 1 / sqrt(colSums(Y^2)))
+    } else{
+      return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
+    }
   }
   K <- length(S)
   
@@ -619,6 +625,9 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
   
   log_with_time("Starting FindOptimalPermutSingle function")
   # limit the component number of 2 matrix are same
+  Sest = as.matrix(Sest)
+  Strue = as.matrix(Strue)
+  
   n_sources_estimate <- ncol(Sest)
   n_row_est <- nrow(Sest)
   n_sources_true <- ncol(Strue)
@@ -649,55 +658,63 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
   
   library(gtools)
   N_sources = dim(Sest)[2]
-  
-  log_with_time(paste("Number of sources:", N_sources))
-  
-  AllPerms = permutations( n = N_sources , r = N_sources , v = 1:N_sources )
-  nPerms = dim(AllPerms)[1]
-  
-  log_with_time(paste("Total permutations to evaluate:", nPerms))
-  
-  #Find best permutation
-  BestRecov = -9999
-  BestPerm = -9999
-  log_with_time("Starting permutation search")
-  
-  for( permtel in 1:nPerms )
-  {
-    if(verbose == TRUE)
+  if (N_sources < 2) {
+    tempRecov = abs( Tucker(Strue ,Sest) ) 
+    BestRecov = tempRecov
+    BestRecovBlock = tempRecov
+    BestPerm = 1
+  } else {
+    log_with_time(paste("Number of sources:", N_sources))
+    
+    AllPerms = permutations( n = N_sources , r = N_sources , v = 1:N_sources )
+    nPerms = dim(AllPerms)[1]
+    
+    log_with_time(paste("Total permutations to evaluate:", nPerms))
+    
+    #Find best permutation
+    BestRecov = -9999
+    BestPerm = -9999
+    log_with_time("Starting permutation search")
+    
+    for( permtel in 1:nPerms )
     {
-      if( (permtel%%50) == 0)
+      if(verbose == TRUE)
       {
-        print( paste( "perm: " , permtel , "/" , nPerms ) )
+        if( (permtel%%50) == 0)
+        {
+          print( paste( "perm: " , permtel , "/" , nPerms ) )
+        }
       }
-    }
-    
-    
-    tp = AllPerms[permtel,]
-    tempRecovBlock = matrix( -9999 , 1 , 1 )
-    
-    tempRecovBlock[1] = mean( abs( diag( Tucker(Strue ,
-                                                          Sest[, tp] ) ) ) )
-    # niet nodig als het goed is
-    tempRecov = mean(tempRecovBlock)
-    
-    if( permtel==1 )
-    {
-      BestRecov = tempRecov
-      BestRecovBlock = tempRecovBlock
-      BestPerm = tp
-    }
-    else
-    {
-      if( (tempRecov-BestRecov)>.0000000001 )
+      
+      
+      tp = AllPerms[permtel,]
+      tempRecovBlock = matrix( -9999 , 1 , 1 )
+      
+      tempRecovBlock[1] = mean( abs( diag( Tucker(Strue ,
+                                                  Sest[, tp] ) ) ) )
+      # niet nodig als het goed is
+      tempRecov = mean(tempRecovBlock)
+      
+      if( permtel==1 )
       {
         BestRecov = tempRecov
         BestRecovBlock = tempRecovBlock
         BestPerm = tp
       }
+      else
+      {
+        if( (tempRecov-BestRecov)>.0000000001 )
+        {
+          BestRecov = tempRecov
+          BestRecovBlock = tempRecovBlock
+          BestPerm = tp
+        }
+      }
+      rm(tp,tempRecov,tempRecovBlock)
     }
-    rm(tp,tempRecov,tempRecovBlock)
   }
+  
+
   
   Out = list()
   Out$BestRecov = BestRecov

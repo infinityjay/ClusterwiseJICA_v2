@@ -712,7 +712,7 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
       }
       rm(tp,tempRecov,tempRecovBlock)
     }
-  } else {
+  } else if (N_sources <= 8) {
     # Fast permutation approach for N_sources > 8
     log_with_time(paste("Using fast permutation for", N_sources, "sources"))
     TuckerMatrix = Tucker(Strue, Sest)
@@ -745,6 +745,8 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
     BestRecov = mean(BestRecovBlock)
     
     log_with_time("Fast permutation completed")
+  } else {
+    stop("Error: Number of sources exceeds the maximum limit of 10. Current number of sources: ", N_sources)
   }
   
 

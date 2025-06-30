@@ -38,8 +38,13 @@ parse_filename <- function(fname) {
     # Extract Q vector (everything between Q and E)
     q_start <- which(grepl("^Q", parts))
     e_pos <- which(grepl("^E", parts))
-    q_parts <- parts[(q_start+1):(e_pos-1)]
-    Qvect <- as.numeric(q_parts)
+    
+    # Get the first Q value from the Q part itself
+    q_first <- as.numeric(gsub("Q", "", parts[q_start]))
+    # Get the remaining Q values from parts between Q and E
+    q_remaining <- as.numeric(parts[(q_start+1):(e_pos-1)])
+    # Combine them
+    Qvect <- c(q_first, q_remaining)
     
     E <- as.numeric(gsub("E", "", parts[e_pos]))
     VAF <- as.numeric(gsub("VAF", "", parts[e_pos + 1]))

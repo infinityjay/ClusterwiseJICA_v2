@@ -72,8 +72,8 @@ cal_nc <- function(X, threshold = 0.8, useChull = TRUE) {
       nc_value <- min(which(vaf >= threshold))
     }
     
-    # limit the nc value at 8
-    nc_value <- min(nc_value, 8)
+    # limit the nc value at 10
+    nc_value <- min(nc_value, 10)
     nc_vector <- c(nc_vector, nc_value)
   }
   
@@ -634,27 +634,27 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
   n_row_true <- nrow(Strue)
   log_with_time(paste("dimention of Sest: (", n_row_est,",",n_sources_estimate, "); dimention of Strue: (", n_row_true, ",",n_sources_true, ")"))
   
-  if(n_sources_estimate != n_sources_true) {
+  # if(n_sources_estimate != n_sources_true) {
     
-    # Determine the minimum number of sources to keep both matrices comparable
-    # Also limit the source number smaller than 8
-    n_sources_final <- min(n_sources_estimate, n_sources_true, 8)  
+  #   # Determine the minimum number of sources to keep both matrices comparable
+  #   # Also limit the source number smaller than 8
+  #   n_sources_final <- min(n_sources_estimate, n_sources_true, 8)  
     
-    # Reduce Sest if it has more sources than needed
-    if(n_sources_estimate > n_sources_final) {
-      log_with_time("Applying source selection to Sest")
-      sest_selected <- select_top_sources(Sest, n_sources_final, selection_method)
-      Sest <- sest_selected$selected_matrix
-      log_with_time(paste("Reduced Sest from", n_sources_estimate, "to", n_sources_final, "sources"))
-    }
+  #   # Reduce Sest if it has more sources than needed
+  #   if(n_sources_estimate > n_sources_final) {
+  #     log_with_time("Applying source selection to Sest")
+  #     sest_selected <- select_top_sources(Sest, n_sources_final, selection_method)
+  #     Sest <- sest_selected$selected_matrix
+  #     log_with_time(paste("Reduced Sest from", n_sources_estimate, "to", n_sources_final, "sources"))
+  #   }
     
-    # # Reduce Strue if it has more sources than needed
-    # if(n_sources_true > n_sources_final) {
-    #   strue_selected <- select_top_sources(Strue, n_sources_final, selection_method)
-    #   Strue <- strue_selected$selected_matrix
-    #   log_with_time(paste("Reduced Strue from", n_sources_true, "to", n_sources_final, "sources"))
-    # }
-  }
+  #   # # Reduce Strue if it has more sources than needed
+  #   # if(n_sources_true > n_sources_final) {
+  #   #   strue_selected <- select_top_sources(Strue, n_sources_final, selection_method)
+  #   #   Strue <- strue_selected$selected_matrix
+  #   #   log_with_time(paste("Reduced Strue from", n_sources_true, "to", n_sources_final, "sources"))
+  #   # }
+  # }
   
   library(gtools)
   N_sources = dim(Sest)[2]
@@ -663,7 +663,7 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
     BestRecov = tempRecov
     BestRecovBlock = tempRecov
     BestPerm = 1
-  } else {
+  } else if (N_sources <= 8) {
     log_with_time(paste("Number of sources:", N_sources))
     
     AllPerms = permutations( n = N_sources , r = N_sources , v = 1:N_sources )
@@ -712,6 +712,39 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
       }
       rm(tp,tempRecov,tempRecovBlock)
     }
+  } else {
+    # Fast permutation approach for N_sources > 8
+    log_with_time(paste("Using fast permutation for", N_sources, "sources"))
+    TuckerMatrix = Tucker(Strue, Sest)
+    
+    # For each row (true component), find the column (estimated component) with maximum absolute correlation
+    BestPerm = numeric(N_sources)
+    used_columns = logical(N_sources)
+    
+    for(i in 1:N_sources) {
+      # Find available columns (not yet assigned)
+      available_cols = which(!used_columns)
+      
+      if(length(available_cols) == 0) {
+        stop("No available columns remaining for assignment")
+      }
+      
+      # Among available columns, find the one with maximum absolute correlation for this row
+      abs_corr_available = abs(TuckerMatrix[i, available_cols])
+      best_available_idx = which.max(abs_corr_available)
+      best_col = available_cols[best_available_idx]
+      
+      # Assign this column to this position
+      BestPerm[i] = best_col
+      used_columns[best_col] = TRUE
+    }
+    
+    # Calculate the recovery using the best permutation
+    BestRecovBlock = matrix(-9999, 1, 1)
+    BestRecovBlock[1] = mean(abs(diag(Tucker(Strue, Sest[, BestPerm]))))
+    BestRecov = mean(BestRecovBlock)
+    
+    log_with_time("Fast permutation completed")
   }
   
 
@@ -780,7 +813,13 @@ FindOptimalClusPermut <- function(Pest, Ptrue){
 }
 
 Tucker <- function(X, Y){
-  return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
+  X = as.matrix(X)
+  Y = as.matrix(Y)
+  if (dim(X)[2] < 2 ) {
+    return(1 / sqrt(colSums(X^2)) %*% crossprod(X,Y) %*% 1 / sqrt(colSums(Y^2)))
+  } else{
+    return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
+  }
 }
 
 modRV <- function(X, Y){

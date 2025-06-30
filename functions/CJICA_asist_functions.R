@@ -529,15 +529,6 @@ Avoid_nc_N <- function(newcluster, SSminVec, nc) {
 
 # Tucker check function
 TuckCheck <- function(S){
-  Tucker <- function(X, Y){
-    X = as.matrix(X)
-    Y = as.matrix(Y)
-    if (dim(X)[2] < 2 ) {
-      return(1 / sqrt(colSums(X^2)) %*% crossprod(X,Y) %*% 1 / sqrt(colSums(Y^2)))
-    } else{
-      return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )
-    }
-  }
   K <- length(S)
   
   if(K == 5){
@@ -659,6 +650,7 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
   library(gtools)
   N_sources = dim(Sest)[2]
   if (N_sources < 2) {
+    log_with_time("Calculate Tucker directly")
     tempRecov = abs( Tucker(Strue ,Sest) ) 
     BestRecov = tempRecov
     BestRecovBlock = tempRecov
@@ -712,8 +704,8 @@ FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_me
       }
       rm(tp,tempRecov,tempRecovBlock)
     }
-  } else if (N_sources <= 8) {
-    # Fast permutation approach for N_sources > 8
+  } else if (N_sources <= 10) {
+    # Fast permutation approach for N_sources 8-10
     log_with_time(paste("Using fast permutation for", N_sources, "sources"))
     TuckerMatrix = Tucker(Strue, Sest)
     
@@ -817,7 +809,7 @@ FindOptimalClusPermut <- function(Pest, Ptrue){
 Tucker <- function(X, Y){
   X = as.matrix(X)
   Y = as.matrix(Y)
-  if (dim(X)[2] < 2 ) {
+  if (dim(X)[2] < 2 || dim(Y)[2] < 2) {
     return(1 / sqrt(colSums(X^2)) %*% crossprod(X,Y) %*% 1 / sqrt(colSums(Y^2)))
   } else{
     return (diag(1 / sqrt(colSums(X^2))) %*% crossprod(X,Y) %*% diag(1 / sqrt(colSums(Y^2))) )

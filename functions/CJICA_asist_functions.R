@@ -584,35 +584,35 @@ log_with_time <- function(message) {
     cat("[", timestamp, "] ", message, "\n", sep = "")
 }
 
-# function to select the top sources
-select_top_sources <- function(S, n_select = 8, method = "variance") {
-  if(ncol(S) <= n_select) {
-    log_with_time("Number of sources already within limit")
-    return(list(selected_matrix = S, selected_indices = 1:ncol(S)))
-  }
+# # function to select the top sources
+# select_top_sources <- function(S, n_select = 8, method = "variance") {
+#   if(ncol(S) <= n_select) {
+#     log_with_time("Number of sources already within limit")
+#     return(list(selected_matrix = S, selected_indices = 1:ncol(S)))
+#   }
   
-  log_with_time(paste("Reducing from", ncol(S), "to", n_select, "sources using", method))
+#   log_with_time(paste("Reducing from", ncol(S), "to", n_select, "sources using", method))
   
-  if(method == "variance") {
-    # Select sources with highest variance
-    source_vars <- apply(S, 2, var, na.rm = TRUE)
-    selected_idx <- order(source_vars, decreasing = TRUE)[1:n_select]
-  } else if(method == "energy") {
-    # Select sources with highest energy (sum of squares)
-    source_energy <- apply(S^2, 2, sum, na.rm = TRUE)
-    selected_idx <- order(source_energy, decreasing = TRUE)[1:n_select]
-  } else if(method == "random") {
-    # Random selection
-    selected_idx <- sample(1:ncol(S), n_select)
-  }
+#   if(method == "variance") {
+#     # Select sources with highest variance
+#     source_vars <- apply(S, 2, var, na.rm = TRUE)
+#     selected_idx <- order(source_vars, decreasing = TRUE)[1:n_select]
+#   } else if(method == "energy") {
+#     # Select sources with highest energy (sum of squares)
+#     source_energy <- apply(S^2, 2, sum, na.rm = TRUE)
+#     selected_idx <- order(source_energy, decreasing = TRUE)[1:n_select]
+#   } else if(method == "random") {
+#     # Random selection
+#     selected_idx <- sample(1:ncol(S), n_select)
+#   }
   
-  log_with_time(paste("Selected sources:", paste(selected_idx, collapse = ", ")))
+#   log_with_time(paste("Selected sources:", paste(selected_idx, collapse = ", ")))
   
-  return(list(
-    selected_matrix = S[, selected_idx, drop = FALSE],
-    selected_indices = selected_idx
-  ))
-}
+#   return(list(
+#     selected_matrix = S[, selected_idx, drop = FALSE],
+#     selected_indices = selected_idx
+#   ))
+# }
 
 FindOptimalPermutSingle <- function( Sest , Strue, verbose = FALSE, selection_method = "variance")
 {

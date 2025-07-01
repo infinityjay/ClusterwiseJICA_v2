@@ -100,6 +100,39 @@ safe_extract <- function(obj, path, default = NA) {
     })
 }
 
+# Function to handle tuckercheck data properly
+handle_tuckercheck <- function(tuckercheck_data) {
+    if (is.null(tuckercheck_data) || length(tuckercheck_data) == 0) {
+        return(list(
+            tuckercheck_1 = NA,
+            tuckercheck_2 = NA,
+            tuckercheck_mean = NA,
+            tuckercheck_min = NA,
+            tuckercheck_max = NA,
+            tuckercheck_length = 0
+        ))
+    }
+    
+    # Convert to numeric if it's not already
+    if (!is.numeric(tuckercheck_data)) {
+        tuckercheck_data <- as.numeric(tuckercheck_data)
+    }
+    
+    # Remove any NA values for calculations
+    valid_data <- tuckercheck_data[!is.na(tuckercheck_data)]
+    
+    result <- list(
+        tuckercheck_1 = if(length(tuckercheck_data) >= 1) tuckercheck_data[1] else NA,
+        tuckercheck_2 = if(length(tuckercheck_data) >= 2) tuckercheck_data[2] else NA,
+        tuckercheck_mean = if(length(valid_data) > 0) mean(valid_data) else NA,
+        tuckercheck_min = if(length(valid_data) > 0) min(valid_data) else NA,
+        tuckercheck_max = if(length(valid_data) > 0) max(valid_data) else NA,
+        tuckercheck_length = length(tuckercheck_data)
+    )
+    
+    return(result)
+}
+
 # Function to calculate summary statistics for loss vectors
 calc_loss_stats <- function(loss_vector) {
     if (is.null(loss_vector) || length(loss_vector) == 0) {
@@ -122,7 +155,7 @@ calc_loss_stats <- function(loss_vector) {
 }
 
 # Main collection function
-collect_all_results <- function(results_dir = "result_test", output_dir = "collect_result") {
+collect_all_results <- function(results_dir = "results", output_dir = "collect_result") {
     
     log_with_time("Starting result collection process...")
     
@@ -161,6 +194,10 @@ collect_all_results <- function(results_dir = "result_test", output_dir = "colle
             # Parse filename to get method and parameters
             parsed_info <- parse_result_filename(file_name)
             
+            # Handle tuckercheck data properly
+            tuckercheck_raw <- safe_extract(analysis_result, "tuckercheck")
+            tuckercheck_processed <- handle_tuckercheck(tuckercheck_raw)
+            
             # Create a comprehensive result record
             result_record <- list(
                 # File information
@@ -194,11 +231,11 @@ collect_all_results <- function(results_dir = "result_test", output_dir = "colle
                 runtime = safe_extract(analysis_result, "runtime"),
                 
                 # Seed information
-                seed = safe_extract(analysis_result, "seed"),
-                
-                # Additional metrics from tuckercheck if available
-                tuckercheck = safe_extract(analysis_result, "tuckercheck")
+                seed = safe_extract(analysis_result, "seed")
             )
+            
+            # Add processed tuckercheck data
+            result_record <- c(result_record, tuckercheck_processed)
             
             # Handle loss information (could be ssloss or aicloss)
             ssloss <- safe_extract(analysis_result, "ssloss")

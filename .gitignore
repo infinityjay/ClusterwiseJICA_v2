@@ -56,8 +56,6 @@ logs/
 result/
 simulation_data/
 *.RData
-collect_result/
-*.csv
 data_test/
 result_test/
 results/

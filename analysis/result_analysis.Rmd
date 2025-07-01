@@ -1,0 +1,57 @@
+---
+title: "result_analysis"
+output: html_document
+---
+
+## data preprocess
+
+```{r}
+setwd("/Users/jay/workspace/my_github/ClusterwiseJICA_v2")
+load("./collect_result/comprehensive_results.RData")
+
+```
+
+```{r}
+str(results_df)
+```
+
+```{r}
+result_small <- results_df[, c("method", "complex", "K", "E","VAF","Qvect_string","ari","tucker_S")]
+```
+
+```{r}
+str(result_small)
+```
+
+## compare ARI
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+factors <- c("K", "complex", "E", "VAF", "Qvect_string", "method")
+
+for (factor in factors) {
+  cat("==== Grouped by:", factor, "====\n")
+  print(
+    result_small %>%
+      group_by(across(all_of(factor))) %>%
+      summarise(
+        mean_ari = round(mean(ari, na.rm = TRUE), 4),
+        sd_ari = round(sd(ari, na.rm = TRUE), 4),
+        mean_tucker_S = round(mean(tucker_S, na.rm = TRUE), 4),
+        sd_tucker_S = round(sd(tucker_S, na.rm = TRUE), 4),
+        .groups = "drop"
+      )
+  )
+  cat("\n")
+}
+
+
+```
+
+
+
+
+
+## compare Tucker

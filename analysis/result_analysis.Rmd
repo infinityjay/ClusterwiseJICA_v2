@@ -6,6 +6,9 @@ output: html_document
 ## data preprocess
 
 ```{r}
+library(dplyr)
+library(tidyr)
+
 setwd("/Users/jay/workspace/my_github/ClusterwiseJICA_v2")
 load("./collect_result/comprehensive_results.RData")
 
@@ -50,6 +53,92 @@ for (factor in factors) {
 
 ```
 
+```{r}
+# Compare ARI across methods for each Qvect_string
+ari_Q_method <- result_small %>%
+  group_by(Qvect_string, method) %>%
+  summarise(
+    mean_ari = round(mean(ari, na.rm = TRUE), 4),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = method,
+    values_from = mean_ari
+  ) %>%
+  arrange(Qvect_string)
+ari_Q_method
+```
+
+
+```{r}
+ari_complex_method <- result_small %>%
+  filter(method %in% c("chull", "vaf")) %>%  # keep only these two methods
+  group_by(complex, method) %>%
+  summarise(
+    mean_ari = round(mean(ari, na.rm = TRUE), 4),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = method,
+    values_from = mean_ari
+  ) %>%
+  arrange(complex)
+ari_complex_method
+```
+
+
+```{r}
+# Run ANOVA with multiple factors
+anova_1 <- aov(ari ~ E + Qvect_string + method + VAF, data = result_small)
+
+# Show the ANOVA table
+summary(anova_1)
+```
+
+
+
+```{r}
+# Run ANOVA with multiple factors
+anova_inter <- aov(ari ~ E * Qvect_string * method * VAF * complex, data = result_small)
+
+# Show the ANOVA table
+summary(anova_inter)
+```
+
+
+```{r}
+mean_ari_vaf <- result_small %>%
+  group_by(method, VAF) %>%
+  summarise(mean_ari = mean(ari, na.rm = TRUE)) %>%
+  arrange(method, VAF)
+
+mean_ari_vaf
+
+
+```
+
+
+```{r}
+library(ggplot2)
+
+# Histogram + density plot for ARI
+ggplot(result_small, aes(x = ari)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_density(color = "blue", size = 1) +
+  xlab("ARI") +
+  ylab("Density") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(results_df, aes(x = method, y = ari, fill = method)) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  geom_boxplot(width = 0.05, fill = "white", outlier.size = 2) + 
+  xlab("Method") +
+  ylab("ARI") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
 
 
 

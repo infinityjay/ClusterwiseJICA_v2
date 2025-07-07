@@ -144,3 +144,70 @@ ggplot(results_df, aes(x = method, y = ari, fill = method)) +
 
 
 ## compare Tucker
+
+```{r}
+library(ggplot2)
+
+# Histogram + density plot for Tucker
+ggplot(result_small, aes(x = tucker_S)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_density(color = "blue", size = 1) +
+  xlab("Tucker") +
+  ylab("Density") +
+  theme_minimal()
+```
+
+
+
+```{r}
+ggplot(results_df, aes(x = method, y = tucker_S, fill = method)) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  geom_boxplot(width = 0.05, fill = "white", outlier.size = 2) + 
+  xlab("Method") +
+  ylab("Tucker") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r}
+# Compare tucker across methods for each Qvect_string
+tucker_Q_method <- result_small %>%
+  group_by(Qvect_string, method) %>%
+  summarise(
+    mean_ari = round(mean(tucker_S, na.rm = TRUE), 4),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = method,
+    values_from = mean_ari
+  ) %>%
+  arrange(Qvect_string)
+tucker_Q_method
+```
+
+```{r}
+# Run ANOVA with multiple factors
+anova_inter <- aov(tucker_S ~ E * Qvect_string * method * VAF * complex, data = result_small)
+
+# Show the ANOVA table
+summary(anova_inter)
+```
+
+```{r}
+tucker_complex_method <- result_small %>%
+  filter(method %in% c("chull", "vaf")) %>%  # keep only these two methods
+  group_by(complex, method) %>%
+  summarise(
+    mean_tucker = round(mean(tucker_S, na.rm = TRUE), 4),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = method,
+    values_from = mean_tucker
+  ) %>%
+  arrange(complex)
+tucker_complex_method
+```
+
+
+

@@ -50,6 +50,17 @@ for (factor in factors) {
   cat("\n")
 }
 
+cat("==== Overall Summary ====\n")
+overall_summary <- result_small %>%
+  summarise(
+    overall_mean_ari = round(mean(ari, na.rm = TRUE), 4),
+    overall_sd_ari = round(sd(ari, na.rm = TRUE), 4),
+    overall_mean_tucker_S = round(mean(tucker_S, na.rm = TRUE), 4),
+    overall_sd_tucker_S = round(sd(tucker_S, na.rm = TRUE), 4)
+  )
+print(overall_summary)
+cat("\n")
+
 
 ```
 
@@ -101,8 +112,20 @@ summary(anova_1)
 # Run ANOVA with multiple factors
 anova_inter <- aov(ari ~ E * Qvect_string * method * VAF * complex, data = result_small)
 
-# Show the ANOVA table
-summary(anova_inter)
+anova_table <- summary(anova_inter)[[1]]
+
+# Total SS is the sum of all Sum Sq (including residuals)
+ss_total <- sum(anova_table[["Sum Sq"]])
+
+# Calculate eta squared for each factor
+eta_squared <- anova_table[["Sum Sq"]] / ss_total
+
+# Add eta² as a new column
+anova_table$eta_squared <- round(eta_squared, 4)
+# Filter rows with eta² > 0.10
+anova_table_filtered <- anova_table[anova_table$eta_squared > 0.10, ]
+# Show the updated ANOVA table
+anova_table_filtered
 ```
 
 
@@ -189,8 +212,20 @@ tucker_Q_method
 # Run ANOVA with multiple factors
 anova_inter <- aov(tucker_S ~ E * Qvect_string * method * VAF * complex, data = result_small)
 
-# Show the ANOVA table
-summary(anova_inter)
+anova_table <- summary(anova_inter)[[1]]
+
+# Total SS is the sum of all Sum Sq (including residuals)
+ss_total <- sum(anova_table[["Sum Sq"]])
+
+# Calculate eta squared for each factor
+eta_squared <- anova_table[["Sum Sq"]] / ss_total
+
+# Add eta² as a new column
+anova_table$eta_squared <- round(eta_squared, 4)
+# Filter rows with eta² > 0.10
+anova_table_filtered <- anova_table[anova_table$eta_squared > 0.10, ]
+# Show the updated ANOVA table
+anova_table_filtered
 ```
 
 ```{r}
